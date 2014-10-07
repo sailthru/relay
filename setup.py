@@ -25,7 +25,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires = [
-        'mesos', 'mesos.native', 'mesos.cli', 'mesos.interface'],
+        'mesos.native', 'mesos.cli', 'mesos.interface'],
     tests_require=['nose'],
     test_suite="nose.main",
 )
