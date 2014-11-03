@@ -12,7 +12,7 @@ class PluginInterface(collections.Iterator):
         raise NotImplementedError()
 
 
-class Always1Metric(collections.Iterator):
+class Always1(collections.Iterator):
     """An example metric that always returns 1"""
     def next(self):
         return 1

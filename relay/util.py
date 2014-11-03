@@ -4,8 +4,9 @@ log = logging.getLogger('relay.util')
 
 
 def log_raise(msg, extra={}, err_kls=Exception):
-    log(msg, extra=extra)
-    raise err_kls(msg)
+    log.error(msg, extra=extra)
+    raise err_kls("%s ||| %s" % (
+        msg, ' '.join('='.join([str(k), str(v)]) for k, v in extra.items())))
 
 
 class InvalidImportPath(Exception):
@@ -39,7 +40,15 @@ def load_obj_from_path(import_path, prefix=None, ld=dict()):
             ("import path needs at least 1 period in your import path."
              " An example import path is something like: module.obj"),
             dict(import_path=import_path, **ld), InvalidImportPath)
-    mod = importlib.import_module(path)
+    try:
+        mod = importlib.import_module(path)
+    except ImportError:
+        newpath = path.replace(prefix, '', 1).lstrip('.')
+        log.debug(
+            "Could not load import path.  Trying a different one",
+            extra=dict(oldpath=path, newpath=newpath))
+        path = newpath
+        mod = importlib.import_module(path)
     try:
         obj = getattr(mod, obj_name)
     except AttributeError:
@@ -47,6 +56,6 @@ def load_obj_from_path(import_path, prefix=None, ld=dict()):
             ("object does not exist in given module."
              " Your import path is not"
              " properly defined because the given `obj_name` does not exist"),
-            dict(import_path=import_path, obj_name=obj_name, **ld),
+            dict(import_path=path, obj_name=obj_name, **ld),
             InvalidImportPath)
     return obj
