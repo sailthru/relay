@@ -12,15 +12,23 @@ class InvalidImportPath(Exception):
     pass
 
 
-def load_obj_from_path(import_path, ld=dict()):
+def load_obj_from_path(import_path, prefix=None, ld=dict()):
     """
-    import a python object from an import path like:
+    import a python object from an import path
 
-        mypackage.module.func
+    `import_path` - a python import path.  For instance:
+            mypackage.module.func
         or
-        mypackage.module.class
-
+            mypackage.module.class
+    `prefix` (str) - a value to prepend to the import path
+        if it isn't already there.  For instance:
+            load_obj_from_path('module.func', prefix='mypackage')
+        is the same as
+            load_obj_from_path('mypackage.module.func')
+    `ld` (dict) key:value data to pass to the logger if an error occurs
     """
+    if prefix and not import_path.startswith(prefix):
+        import_path = '.'.join([prefix, import_path])
     log.debug(
         'attempting to load a python object from an import path',
         extra=dict(import_path=import_path, **ld))
