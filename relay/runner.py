@@ -1,6 +1,5 @@
 import argparse_tools as at
 import os
-from types import ModuleType
 import time
 
 from relay import log, configure_logging
@@ -14,7 +13,7 @@ def main(ns):
     metric = ns.metric()
     while True:
         if next(metric) > 0:
-            ns.launcher()
+            ns.launcher(1)
         time.sleep(ns.delay)
 
 
