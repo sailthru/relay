@@ -1,9 +1,9 @@
 import collections
 
 
-class PluginInterface(collections.Iterator):
+class MetricPluginInterface(collections.Iterator):
     """
-    Base class that all plugins can inherit from.  A plugin is just an
+    Base class that all metric plugins can inherit from.  A plugin is just an
     iterator, so you can also define function generators that have the
     same effect.
     """
@@ -16,6 +16,12 @@ class Always1(collections.Iterator):
     """An example metric that always returns 1"""
     def next(self):
         return 1
+
+
+def sometimes_1():
+    import random
+    while 1:
+        yield random.choice([0, 1])
 
 
 def square_wave_metric():

@@ -30,9 +30,15 @@ def load_obj_from_path(import_path, prefix=None, ld=dict()):
     """
     if prefix and not import_path.startswith(prefix):
         import_path = '.'.join([prefix, import_path])
+
     log.debug(
         'attempting to load a python object from an import path',
         extra=dict(import_path=import_path, **ld))
+    try:
+        mod = importlib.import_module(import_path)
+        return mod  # yay, we found a module.  return it
+    except:
+        pass  # try to extract an object from a module
     try:
         path, obj_name = import_path.rsplit('.', 1)
     except ValueError:
