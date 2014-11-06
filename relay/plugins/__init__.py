@@ -45,15 +45,15 @@ def bash_echo_metric():
     import random
 
     # more predictable version of the metric
-    # cmd = 'pgrep -f "from bash: started relay launcher" |wc -l'
+    cmd = 'pgrep -f "from bash: started relay launcher" |wc -l'
 
     # less predictable version of the metric
-    cmd = 'ps aux|wc -l'
+    # cmd = 'ps aux|wc -l'
 
     while True:
         yield (
             int(subprocess.check_output(cmd, shell=True))
-            + random.choice([-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8])
+            # + random.choice([-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8])
         )
 
 
