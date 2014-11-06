@@ -16,18 +16,32 @@ def main(ns):
     SP = ns.target
     while True:
         PV = next(metric)
-        if (PV - SP) > 0:
-            ns.launcher(1)
+        log.debug('got metric value', extra=dict(PV=PV))
+        if PV < SP:
+            if ns.warmer:
+                n = SP - PV
+                log.debug('adding heat', extra=dict(MV=n))
+                ns.warmer(n)
+            else:
+                log.warn('too cold', extra=dict(PV=PV))
+        elif PV > SP:
+            if ns.cooler:
+                n = PV - SP
+                log.debug('removing heat', extra=dict(MV=n * -1))
+                ns.cooler(n)
+            else:
+                log.warn('too hot', extra=dict(PV=PV))
+        else:
+            log.debug('stabilized at setpoint',
+                      extra=dict(stabilized_value=ns.target))
         time.sleep(ns.delay)
 
 
 build_arg_parser = at.build_arg_parser([
     at.add_argument(
         '-m', '--metric', required=True,
-        type=lambda x: util.load_obj_from_path(x, prefix='relay.metrics'),
+        type=lambda x: util.load_obj_from_path(x, prefix='relay.plugins'),
         help=(
-            'Please supply the name of a supported relay metric plugin or'
-            ' a python import path that will load your own custom plugin. '
             ' This should point to generator (function or class) that,'
             ' when called, returns a metric value.  In a PID controller, this'
             ' corresponds to the process variable (PV).'
@@ -37,17 +51,15 @@ build_arg_parser = at.build_arg_parser([
             '  "mycode.custom_metric.plugin"\n'
         )),
     at.add_argument(
-        '-l', '--launcher', required=True,
-        type=lambda x: util.load_obj_from_path(x, prefix='relay.launchers'),
+        '-w', '--warmer',
+        type=lambda x: util.load_obj_from_path(x, prefix='relay.plugins'),
         help=(
-            'Please supply the name of a supported relay launcher plugin or'
-            ' a python import path that will load your own custom plugin. '
-            ' This should point to a function that executes your task.  In a'
-            ' PID controller, this corresponds to the manipulated variable (MV)'
+            ' This should point to a function that starts n additional tasks.'
+            ' In a PID controller, this is the manipulated variable (MV).'
             '  Valid examples:\n'
             '  "bash_echo",\n'
-            '  "relay.launchers.bash_echo",\n'
-            '  "mycode.custom_launcher.plugin"\n'
+            '  "relay.warmers.bash_echo",\n'
+            '  "mycode.custom_warmer.plugin"\n'
         )),
     at.add_argument(
         '-t', '--target', default=0, type=int, help=(
@@ -57,6 +69,17 @@ build_arg_parser = at.build_arg_parser([
             ' to the setpoint (SP).'
         )),
     at.add_argument(
-        '--delay', type=int, default=os.environ.get('RELAY_DELAY', 1),
+        '-c', '--cooler',
+        type=lambda x: util.load_obj_from_path(x, prefix='relay.plugins'),
+        help=(
+            ' This should point to a function or class that terminates n'
+            " instances of your tasks."
+            '  In a PID controller, this is the manipulated variable (MV).'
+            " You may not want to implement"
+            " both a warmer and a cooler.  Does your thermostat toggle"
+            " the heating element and air conditioner at the same time?"
+        )),
+    at.add_argument(
+        '--delay', type=float, default=os.environ.get('RELAY_DELAY', 1),
         help='num seconds to wait between metric polling'),
 ])
