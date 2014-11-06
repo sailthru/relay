@@ -19,22 +19,23 @@ def main(ns):
         PV = next(metric)  # process variable
         log.debug('got metric value', extra=dict(PV=PV))
         err = (SP - PV)
+        MV = err * Kp
 
-        if PV < SP:
+        if MV > 0:
             if ns.warmer:
-                log.debug('adding heat', extra=dict(MV=err * Kp, err=err))
-                ns.warmer(err * Kp)
+                log.debug('adding heat', extra=dict(MV=MV, err=err))
+                ns.warmer(MV)
             else:
                 log.warn('too cold', extra=dict(err=err))
-        elif PV > SP:
+        elif MV < 0:
             if ns.cooler:
-                log.debug('removing heat', extra=dict(MV=err * Kp, err=err))
-                ns.cooler(err * Kp)
+                log.debug('removing heat', extra=dict(MV=MV, err=err))
+                ns.cooler(MV)
             else:
                 log.warn('too hot', extra=dict(err=err))
         else:
             log.debug(
-                'stabilized PV at setpoint', extra=dict(MV=err * Kp, PV=PV))
+                'stabilized PV at setpoint', extra=dict(MV=MV, PV=PV))
         time.sleep(ns.delay)
 
 
