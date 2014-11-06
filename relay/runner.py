@@ -1,3 +1,4 @@
+from __future__ import division
 import argparse_tools as at
 import os
 import time
@@ -12,29 +13,73 @@ def main(ns):
     log.info("Starting relay!", extra=dict(**ns.__dict__))
     metric = ns.metric()
     # Implement the PID algorithm
-    # TODO: finish
-    SP = ns.target
-    while True:
+    # http://www.scribd.com/doc/19070283/Discrete-PI-and-PID-Controller-Design-and-Analysis-for-Digital-Implementation
+    SP = ns.target  # set point
+    MV = 0  # measure value
+    err = prev_err = 0
+    integral = 0  # ideal
+    total_err = 0  # positional, incremental
+    Kp, Ti, Td = [1, 10, .001]
+    data = []  # debug
+    MV1 = MV2 = 0  # debug
+    # while True:
+    while len(data) < 100:
         PV = next(metric)
+        prev_prev_err = prev_err
+        prev_err = err
+        err = (SP - PV)
+
+        # PID ideal form
+        Ki = Kp / Ti
+        Kd = Kp * Td
+        derivative = (err - prev_err) / ns.delay
+        integral += err * ns.delay
+        MV3 = Kp * err + Ki * integral + Kd * derivative
+
+        # positional PID algorithm
+        total_err += err
+        MV2 = Kp * (err + ns.delay / Ti * total_err)
+
+        # incremental PI algorithm
+        MV_delta = Kp * (err - prev_err) * (1 + ns.delay / Ti)
+        MV1 = MV1 + Kp * (err - prev_err) * (1 + ns.delay / Ti)
+
+        # velocity PID algorithm
+        MV = Kp * (
+            err * (1 + ns.delay / Ti + Td / ns.delay)
+            + prev_err * (-1 - 2 * Td / ns.delay)
+            + Td / ns.delay * prev_prev_err)
+
+        # debug
+        print MV, MV1, MV2, MV3
+        data.append((MV, MV1, MV2, MV3))
+
+        ns.warmer(1)
         log.debug('got metric value', extra=dict(PV=PV))
-        if PV < SP:
+        if MV < .5:
             if ns.warmer:
-                n = SP - PV
-                log.debug('adding heat', extra=dict(MV=n))
-                ns.warmer(n)
+                log.debug('adding heat', extra=dict(MV=MV))
+                ns.warmer(int(MV))
             else:
-                log.warn('too cold', extra=dict(PV=PV))
-        elif PV > SP:
+                log.warn('too cold', extra=dict(MV=MV))
+        elif MV > .5:
             if ns.cooler:
-                n = PV - SP
-                log.debug('removing heat', extra=dict(MV=n * -1))
-                ns.cooler(n)
+                log.debug('removing heat', extra=dict(MV=MV))
+                ns.cooler(abs(int(MV)))
             else:
-                log.warn('too hot', extra=dict(PV=PV))
+                log.warn('too hot', extra=dict(MV=MV))
         else:
-            log.debug('stabilized at setpoint',
-                      extra=dict(stabilized_value=ns.target))
+            log.debug('stabilized PV at setpoint', extra=dict(MV=MV, PV=PV))
         time.sleep(ns.delay)
+    import pandas as pd
+    df = pd.DataFrame(data)
+    # pylab
+    # figure()
+    # plot(df[0])
+    # plot(df[1])
+    # plot(df[2])
+    # plot(df[3])
+    import IPython ; IPython.embed()
 
 
 build_arg_parser = at.build_arg_parser([
