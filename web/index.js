@@ -2,6 +2,18 @@ var express = require('express');
 var app = express();
 var server = require('http').Server(app);
 var io = require('socket.io')(server);
+
+// console.log('configure zmq');
+var zmq = require('zmq');
+var sub = zmq.socket('sub');
+sub.connect('tcp://127.0.0.1:2001');
+sub.subscribe('');
+sub.on('message', function () {
+  for (var key in arguments) {
+    console.log('FROMJS ' + arguments[key]);
+  }
+});
+
 server.listen(8080);
 
 app.use('/vendor', express.static(__dirname + '/vendor'));

@@ -4,6 +4,7 @@
   "description": "Visualize relay over time",
   "dependencies": {
     "express": "^4.10.1",
-    "socket.io": "^1.2.0"
+    "socket.io": "^1.2.0",
+    "zmq": "~2.8.0"
   }
 }

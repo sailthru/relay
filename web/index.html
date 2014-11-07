@@ -19,7 +19,7 @@
 		});
 
     // setup graph
-		var dataLength = 100; // number of dataPoints visible at any point
+		var dataLength = 1000; // number of dataPoints visible at any point
     for (var x=0 ; x < dataLength ; x++) {
       dps.push({x: x, y: x % 20});
     }
@@ -33,7 +33,7 @@
         chart.render();
     };
 
-    var socket = io('http://localhost:8081');
+    var socket = io('http://localhost:8080');
     socket.on('pvdata', update);
     <!-- setInterval(function() {update({y: x%20})}, 20); -->
   }
