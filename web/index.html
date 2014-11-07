@@ -1,0 +1,46 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+	<script type="text/javascript" src="/vendor/canvasjs.min.js"></script>
+  <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+	<script type="text/javascript">
+	window.onload = function () {
+    var dps = [];  // datapoints
+
+		var chart = new CanvasJS.Chart("chartContainer",{
+			title :{
+          text: "Relay PV Data"
+      },
+			data: [{
+				type: "line",
+				dataPoints: dps
+			}]
+		});
+
+    // setup graph
+		var dataLength = 100; // number of dataPoints visible at any point
+    for (var x=0 ; x < dataLength ; x++) {
+      dps.push({x: x, y: x % 20});
+    }
+    chart.render();
+
+    // update graph
+    var update = function(obj) {
+        dps.push({x: x, y: obj.y});
+        x++;
+        dps.shift();
+        chart.render();
+    };
+
+    var socket = io('http://localhost:8081');
+    socket.on('pvdata', update);
+    <!-- setInterval(function() {update({y: x%20})}, 20); -->
+  }
+	</script>
+</head>
+<body>
+	<div id="chartContainer" style="height: 300px; width:100%;">
+	</div>
+</body>
+</html>
