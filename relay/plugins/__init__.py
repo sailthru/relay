@@ -23,7 +23,7 @@ def warmer(n):
 
 def cooler(n):
     """A function that will decrease values in your metric"""
-    raise NotImplementedError
+    raise NotImplementedError()
 
 
 def metric():
@@ -59,12 +59,20 @@ def bash_echo_metric():
 
 def bash_echo_warmer(n):
     """A very basic example of how to create n additional tasks.
-    This is a warmer function
+    This is a warmer function with randomly delayed effects on the
+    bash_echo_metric and random task lengths to make the metric less predictable
+
     """
     import subprocess
-    cmd = "sh -c 'echo from bash: started relay launcher task && sleep 2'"
+    import random
+    cmd = (
+        "sleep %s "
+        " ; sh -c 'echo from bash: started relay launcher task && sleep %s'"
+    )
     for i in range(n):
-        subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+        subprocess.Popen(
+            cmd % ((1 + random.random()) ** 0, (1 + random.random() ** 0)),
+            shell=True, stdout=subprocess.PIPE)
 
 
 def bash_echo_cooler(n):
