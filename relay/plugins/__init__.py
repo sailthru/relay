@@ -71,7 +71,7 @@ def bash_echo_warmer(n):
     )
     for i in range(n):
         subprocess.Popen(
-            cmd % ((1 + random.random()) ** 0, (1 + random.random() ** 0)),
+            cmd % ((1 + random.random()) ** 0, (1 + random.random() ** 2)),
             shell=True, stdout=subprocess.PIPE)
 
 

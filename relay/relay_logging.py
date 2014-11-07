@@ -1,4 +1,5 @@
 import logging
+import json
 from colorlog import ColoredFormatter
 from relay import log
 
@@ -29,18 +30,31 @@ def configure_logging(add_handler):
         def format(self, record):
             record = _json_format(record)
             return super(ColoredJsonFormatter, self).format(record)
-    if not log.handlers:
-        if add_handler is True:
-            _h = logging.StreamHandler()
-            _h.setFormatter(ColoredJsonFormatter(
-                "%(log_color)s%(levelname)-8s %(message)s %(reset)s %(cyan)s",
-                reset=True
-            ))
-            log.addHandler(_h)
-        elif isinstance(add_handler, logging.Handler):
-            log.addHandler(add_handler)
-        else:
-            log.addHandler(logging.NullHandler())
+    if add_handler is True:
+        _h = logging.StreamHandler()
+        _h.setFormatter(ColoredJsonFormatter(
+            "%(log_color)s%(levelname)-8s %(message)s %(reset)s %(cyan)s",
+            reset=True
+        ))
+        log.addHandler(_h)
+    elif isinstance(add_handler, logging.Handler):
+        log.addHandler(add_handler)
+    elif not log.handlers:
+        log.addHandler(logging.NullHandler())
     log.setLevel(logging.DEBUG)
     log.propagate = False
     return log
+
+
+def add_zmq_log_handler():
+    class JSONFormatter(logging.Formatter):
+        def format(self, record):
+            record.msg = json.dumps(record.__dict__)
+            return super(JSONFormatter, self).format(record)
+
+    import zmq.log.handlers
+    sock = zmq.Context().socket(zmq.PUB)
+    sock.bind('tcp://127.0.0.1:2001')
+    handler = zmq.log.handlers.PUBHandler(sock)
+    handler.setFormatter(JSONFormatter())
+    return configure_logging(handler)

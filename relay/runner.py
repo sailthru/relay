@@ -1,16 +1,26 @@
 from __future__ import division
 import argparse_tools as at
 import os
+from os.path import abspath, dirname, join
+import subprocess
 import time
 
-from relay import log, configure_logging
+from relay import log, configure_logging, add_zmq_log_handler
 from relay import util
 
 configure_logging(True)
 
 
+def start_webui():
+    add_zmq_log_handler()
+    cwd = join(dirname(dirname(abspath(__file__))), 'web')
+    subprocess.Popen('cd %s ; node index.js' % cwd, shell=True)
+
+
 def main(ns):
     log.info("Starting relay!", extra=dict(**ns.__dict__))
+    if ns.webui:
+        start_webui()
     metric = ns.metric()
     SP = ns.target  # set point
     err = 0
@@ -48,9 +58,10 @@ build_arg_parser = at.build_arg_parser([
             ' when called, returns a metric value.  In a PID controller, this'
             ' corresponds to the process variable (PV).'
             '  Valid examples:\n'
-            '  "Always1"  (this loads relay.metrics.Always1),\n'
-            '  "relay.metrics.Always1",\n'
-            '  "mycode.custom_metric.plugin"\n'
+            '  "bash_echo_metric"'
+            '  (this loads relay.plugins.bash_echo_metric),\n'
+            '  "relay.plugins.bash_echo_metric",\n'
+            '  "mycode.custom_metric"\n'
         )),
     at.add_argument(
         '-w', '--warmer',
@@ -59,9 +70,9 @@ build_arg_parser = at.build_arg_parser([
             ' This should point to a function that starts n additional tasks.'
             ' In a PID controller, this is the manipulated variable (MV).'
             '  Valid examples:\n'
-            '  "bash_echo",\n'
-            '  "relay.warmers.bash_echo",\n'
-            '  "mycode.custom_warmer.plugin"\n'
+            '  "bash_echo_warmer",\n'
+            '  "relay.plugins.bash_echo_warmer",\n'
+            '  "mycode.my_warmer_func"\n'
         )),
     at.add_argument(
         '-t', '--target', default=0, type=int, help=(
@@ -80,8 +91,14 @@ build_arg_parser = at.build_arg_parser([
             " You may not want to implement"
             " both a warmer and a cooler.  Does your thermostat toggle"
             " the heating element and air conditioner at the same time?"
+            " For valid examples, see the --warmer syntax"
         )),
     at.add_argument(
-        '--delay', type=float, default=os.environ.get('RELAY_DELAY', 1),
+        '-d', '--delay', type=float, default=os.environ.get('RELAY_DELAY', 1),
         help='num seconds to wait between metric polling'),
+    at.add_argument(
+        '--webui', action='store_true', help=(
+            'start up a node.js webserver to visualize how well relay is'
+            ' tuned to your particular metric'
+        )),
 ])

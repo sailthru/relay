@@ -24,8 +24,12 @@ setup(
 
     packages=find_packages(),
     include_package_data=True,
-    install_requires = [
-        'mesos.native', 'mesos.cli', 'mesos.interface'],
+    install_requires=['argparse_tools', 'colorlog'],
+
+    extras_require={
+        'webui': ['pyzmq'],
+        'mesos': ['mesos.native', 'mesos.cli', 'mesos.interface'],
+    },
     tests_require=['nose'],
     test_suite="nose.main",
 )
