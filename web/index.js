@@ -3,34 +3,28 @@ var app = express();
 var server = require('http').Server(app);
 var io = require('socket.io')(server);
 
-// console.log('configure zmq');
+// receive zmq messages
 var zmq = require('zmq');
-var sub = zmq.socket('sub');
-sub.connect('tcp://127.0.0.1:2001');
-sub.subscribe('');
-sub.on('message', function () {
-  for (var key in arguments) {
-    console.log('FROMJS ' + arguments[key]);
-  }
+var subscriber = zmq.socket('sub');
+subscriber.connect('tcp://127.0.0.1:2001');
+subscriber.subscribe('');
+
+// when a client connects via websockets,
+// forward relevant zmq message data to the client
+io.on('connection', function (socket) {
+
+  subscriber.on('message', function () {
+    var payload = JSON.parse(arguments[1].toString());
+    if (payload.PV) {
+      socket.emit('pvdata', {y: payload.PV});
+    }
+  });
 });
 
+// configure webserver
 server.listen(8080);
-
 app.use('/vendor', express.static(__dirname + '/vendor'));
-
 app.get('/', function (req, res) {
     res.sendFile(__dirname + '/index.html');
 });
 
-io.on('connection', function (socket) {
-    socket.emit('news', { x: 'world' });
-      socket.on('my other event', function (data) {
-            console.log(data);
-              });
-
-    setInterval(function() {
-      socket.emit('pvdata', {x: x, y: x % 20}); x = (x+1)%20;},
-      20);
-});
-
-var x = 1;

@@ -30,15 +30,15 @@ def configure_logging(add_handler):
         def format(self, record):
             record = _json_format(record)
             return super(ColoredJsonFormatter, self).format(record)
-    if add_handler is True:
+    if isinstance(add_handler, logging.Handler):
+        log.addHandler(add_handler)
+    elif add_handler is True:
         _h = logging.StreamHandler()
         _h.setFormatter(ColoredJsonFormatter(
             "%(log_color)s%(levelname)-8s %(message)s %(reset)s %(cyan)s",
             reset=True
         ))
         log.addHandler(_h)
-    elif isinstance(add_handler, logging.Handler):
-        log.addHandler(add_handler)
     elif not log.handlers:
         log.addHandler(logging.NullHandler())
     log.setLevel(logging.DEBUG)
@@ -47,14 +47,13 @@ def configure_logging(add_handler):
 
 
 def add_zmq_log_handler():
-    class JSONFormatter(logging.Formatter):
-        def format(self, record):
-            record.msg = json.dumps(record.__dict__)
-            return super(JSONFormatter, self).format(record)
-
     import zmq.log.handlers
+
+    class JSONPubHandler(zmq.log.handlers.PUBHandler):
+        def format(self, record):
+            return json.dumps(record.__dict__)
+
     sock = zmq.Context().socket(zmq.PUB)
     sock.bind('tcp://127.0.0.1:2001')
-    handler = zmq.log.handlers.PUBHandler(sock)
-    handler.setFormatter(JSONFormatter())
+    handler = JSONPubHandler(sock)
     return configure_logging(handler)

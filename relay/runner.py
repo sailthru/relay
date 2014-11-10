@@ -8,17 +8,20 @@ import time
 from relay import log, configure_logging, add_zmq_log_handler
 from relay import util
 
-configure_logging(True)
-
 
 def start_webui():
-    add_zmq_log_handler()
     cwd = join(dirname(dirname(abspath(__file__))), 'web')
     subprocess.Popen('cd %s ; node index.js' % cwd, shell=True)
 
 
 def main(ns):
-    log.info("Starting relay!", extra=dict(**ns.__dict__))
+    print ns.webui
+    if ns.webui:
+        add_zmq_log_handler()
+    configure_logging(True)
+
+    log.info(
+        "Starting relay!", extra={k: str(v) for k, v in ns.__dict__.items()})
     if ns.webui:
         start_webui()
     metric = ns.metric()
@@ -97,8 +100,13 @@ build_arg_parser = at.build_arg_parser([
         '-d', '--delay', type=float, default=os.environ.get('RELAY_DELAY', 1),
         help='num seconds to wait between metric polling'),
     at.add_argument(
-        '--webui', action='store_true', help=(
-            'start up a node.js webserver to visualize how well relay is'
-            ' tuned to your particular metric'
+        '--webui', help=(
+            'Visualize how well relay is'
+            ' tuned to your particular metric.'
+            ' If --webui fork passed, spin up a node.js webserver in a'
+            ' subshell and pass to it the json log messages.'
+            ' If any other argument is'
+            ' passed, it must be a zmq uri that will'
+            ' receive json-encoded log messages from relay.'
         )),
 ])
