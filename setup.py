@@ -32,4 +32,13 @@ setup(
     },
     tests_require=['nose'],
     test_suite="nose.main",
+
+    entry_points = {
+        'console_scripts': [
+            'relay = relay.__main__:go',
+        ],
+        'setuptools.installation': [
+            'eggsecutable = relay.__main__:go',
+        ],
+    },
 )
