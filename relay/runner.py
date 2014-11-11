@@ -19,17 +19,15 @@ def start_webui():
 
 
 @util.coroutine
-def window(n, initial_data=None):
-    if initial_data:
-        win = deque(initial_data, n)
-    else:
-        win = deque(((yield) for _ in range(n)), n)
+def window(n, initial_data=()):
+    win = deque(initial_data, n)
     while 1:
         win.append((yield win))
 
-import numpy as np
 
 def main(ns):
+    # import numpy as np  # TODO: remove debug
+
     # logging... for some reason, the order in which you add handlers matters
     if ns.sendstats:
         if ns.sendstats == 'webui':
@@ -43,22 +41,34 @@ def main(ns):
     metric = ns.metric()
     SP = ns.target  # set point
     err = 0
-    Kp = 1  # adjustment on error to ramp up slower (0<Kp<1) or faster (Kp>1)
-    pvwindow = window(ns.lookback)
-    [pvwindow.send(0) for _ in range(ns.lookback)]
+    # Kp = 1  # adjustment on error to ramp up slower (0<Kp<1) or faster (Kp>1)
+    # errwindow = window(ns.lookback)
+    # addwindow = window(ns.lookback)
+    # addhist = addwindow.send(0)
+    # errhist = errwindow.send(0)
 
     while True:
         PV = next(metric)  # process variable
         log.debug('got metric value', extra=dict(PV=PV))
         err = (SP - PV)
 
-        hist = pvwindow.send(err)
-        # do something with this!
-        MV = err * Kp
+        # sum_adds = sum(addhist)
+        # max_err = max(errhist)
+        # k = (sum_adds - max_err) / (ns.lookback - 1)
+        # k = -0
+        # MV = max_err + k * ns.lookback - sum_adds
+        # print MV, max_err, k, sum_adds
+
+        MV = err  # int(MV / 2)
+
+        # addhist = addwindow.send(MV)
+        # errhist = errwindow.send(err)
+        if MV <= 0:
+            continue
         if MV > 0:
             if ns.warmer:
                 log.debug('adding heat', extra=dict(MV=MV, err=err))
-                ns.warmer(MV - abs(integral))
+                ns.warmer(MV)
             else:
                 log.warn('too cold', extra=dict(MV=+0, err=err))
         elif MV < 0:
