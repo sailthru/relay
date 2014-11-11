@@ -18,6 +18,9 @@ io.on('connection', function (socket) {
     if (payload.PV) {
       socket.emit('pvdata', {y: payload.PV});
     }
+    if (payload.MV) {
+      socket.emit('mvdata', {y: payload.MV});
+    }
   });
 });
 

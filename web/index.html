@@ -6,36 +6,63 @@
   <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
 	<script type="text/javascript">
 	window.onload = function () {
-    var dps = [];  // datapoints
+    arrs = {pvdata: [], mvdata: []}  // datapoints
+		var dataLength = 100; // number of dataPoints visible at any point
+    for (var arrname in arrs) {
+      for (var x=0 ; x < dataLength ; x++) {
+        arrs[arrname].push({x: x, y: 0});
+      }
+    }
 
+    // setup graph
 		var chart = new CanvasJS.Chart("chartContainer",{
 			title :{
           text: "Relay PV Data"
       },
-			data: [{
+			legend: {
+				verticalAlign: "top",
+				horizontalAlign: "center",
+        fontSize: 14,
+				fontColor: "dimGrey"
+      },
+			data: [
+      {
 				type: "line",
-				dataPoints: dps
-			}]
+				dataPoints: arrs['pvdata'],
+        showInLegend: true,
+        name: "PV (process variable - the metric we're monitoring)"
+			},
+      {
+        type: "line",
+        dataPoints: arrs['mvdata'],
+        showInLegend: true,
+        name: "MV (manipulated variable - the amount of heat we're adding)"
+      }
+    ]
 		});
-
-    // setup graph
-		var dataLength = 1000; // number of dataPoints visible at any point
-    for (var x=0 ; x < dataLength ; x++) {
-      dps.push({x: x, y: 0});
-    }
     chart.render();
 
     // update graph
-    var update = function(obj) {
-        dps.push({x: x, y: obj.y});
-        x++;
-        dps.shift();
-        chart.render();
+    var update = function(obj, arrname, incx) {
+      if (!incx) {
+        arrs[arrname][dataLength -1] = {x: x, y: obj.y};
+      } else {
+        arrs[arrname].shift();
+        arrs[arrname].push({x: x, y: obj.y});
+        for (an in arrs) {
+          if (an != arrname) {
+            arrs[an].shift();
+            arrs[an].push({x: x, y: 0});
+          }
+        }
+      }
+      chart.render();
     };
 
     var socket = io('http://localhost:8080');
-    socket.on('pvdata', update);
-    <!-- setInterval(function() {update({y: x%20})}, 20); -->
+    socket.on('pvdata', function(obj) {x++; update(obj, 'pvdata', true);});
+    socket.on('mvdata', function(obj) {update(obj, 'mvdata', false);});
+    <!-- setInterval(function() {update({y: x % 20})}, 20); -->
   }
 	</script>
 </head>
