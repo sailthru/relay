@@ -1,5 +1,6 @@
 from __future__ import division
 import argparse_tools as at
+from collections import deque
 import os
 from os.path import abspath, dirname, join
 import subprocess
@@ -11,41 +12,61 @@ from relay import util
 
 def start_webui():
     cwd = join(dirname(dirname(abspath(__file__))), 'web')
-    subprocess.Popen('cd %s ; node index.js' % cwd, shell=True)
+    log.info("Starting node.js webui in a subshell")
+    subprocess.Popen(
+        'cd %s ; node index.js' % cwd, shell=True,
+        preexec_fn=os.setsid)  # guarantee that the child process exits with me
 
+
+@util.coroutine
+def window(n, initial_data=None):
+    if initial_data:
+        win = deque(initial_data, n)
+    else:
+        win = deque(((yield) for _ in range(n)), n)
+    while 1:
+        win.append((yield win))
+
+import numpy as np
 
 def main(ns):
-    print ns.webui
-    if ns.webui:
-        add_zmq_log_handler()
+    # logging... for some reason, the order in which you add handlers matters
+    if ns.sendstats:
+        if ns.sendstats == 'webui':
+            add_zmq_log_handler('tcp://127.0.0.1:2001')
     configure_logging(True)
-
     log.info(
         "Starting relay!", extra={k: str(v) for k, v in ns.__dict__.items()})
-    if ns.webui:
+    if ns.sendstats == 'webui':
         start_webui()
+
     metric = ns.metric()
     SP = ns.target  # set point
     err = 0
     Kp = 1  # adjustment on error to ramp up slower (0<Kp<1) or faster (Kp>1)
+    pvwindow = window(ns.lookback)
+    [pvwindow.send(0) for _ in range(ns.lookback)]
+
     while True:
         PV = next(metric)  # process variable
         log.debug('got metric value', extra=dict(PV=PV))
         err = (SP - PV)
-        MV = err * Kp
 
+        hist = pvwindow.send(err)
+        # do something with this!
+        MV = err * Kp
         if MV > 0:
             if ns.warmer:
                 log.debug('adding heat', extra=dict(MV=MV, err=err))
-                ns.warmer(MV)
+                ns.warmer(MV - abs(integral))
             else:
-                log.warn('too cold', extra=dict(err=err))
+                log.warn('too cold', extra=dict(MV=+0, err=err))
         elif MV < 0:
             if ns.cooler:
                 log.debug('removing heat', extra=dict(MV=MV, err=err))
                 ns.cooler(MV)
             else:
-                log.warn('too hot', extra=dict(err=err))
+                log.warn('too hot', extra=dict(MV=-0, err=err))
         else:
             log.debug(
                 'stabilized PV at setpoint', extra=dict(MV=MV, PV=PV))
@@ -100,13 +121,16 @@ build_arg_parser = at.build_arg_parser([
         '-d', '--delay', type=float, default=os.environ.get('RELAY_DELAY', 1),
         help='num seconds to wait between metric polling'),
     at.add_argument(
-        '--webui', help=(
-            'Visualize how well relay is'
-            ' tuned to your particular metric.'
-            ' If --webui fork passed, spin up a node.js webserver in a'
+        '--sendstats', help=(
+            'You can visualize how well relay is'
+            ' tuned to your particular metric with the stats generated.'
+            ' If "--sendstats webui" passed, spin up a node.js webserver in a'
             ' subshell and pass to it the json log messages.'
             ' If any other argument is'
             ' passed, it must be a zmq uri that will'
-            ' receive json-encoded log messages from relay.'
+            ' receive arbitrary json-encoded log messages from relay.'
         )),
+    at.add_argument(
+        '--lookback', default=100, type=int, help=(
+            'Keep a history of the last n PV samples for online tuning'))
 ])

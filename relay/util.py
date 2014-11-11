@@ -65,3 +65,11 @@ def load_obj_from_path(import_path, prefix=None, ld=dict()):
             dict(import_path=path, obj_name=obj_name, **ld),
             InvalidImportPath)
     return obj
+
+
+def coroutine(func):
+    def f(*args, **kwargs):
+        g = func(*args, **kwargs)
+        g.next()
+        return g
+    return f

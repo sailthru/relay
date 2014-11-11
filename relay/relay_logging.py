@@ -46,7 +46,7 @@ def configure_logging(add_handler):
     return log
 
 
-def add_zmq_log_handler():
+def add_zmq_log_handler(address):
     import zmq.log.handlers
 
     class JSONPubHandler(zmq.log.handlers.PUBHandler):
@@ -54,6 +54,6 @@ def add_zmq_log_handler():
             return json.dumps(record.__dict__)
 
     sock = zmq.Context().socket(zmq.PUB)
-    sock.bind('tcp://127.0.0.1:2001')
+    sock.bind(address)
     handler = JSONPubHandler(sock)
     return configure_logging(handler)
