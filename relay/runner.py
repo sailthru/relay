@@ -1,6 +1,7 @@
 from __future__ import division
 import argparse_tools as at
 from collections import deque
+import numpy as np
 import os
 from os.path import abspath, dirname, join
 import subprocess
@@ -26,8 +27,6 @@ def window(n, initial_data=()):
 
 
 def main(ns):
-    # import numpy as np  # TODO: remove debug
-
     # logging... for some reason, the order in which you add handlers matters
     if ns.sendstats:
         if ns.sendstats == 'webui':
@@ -41,28 +40,23 @@ def main(ns):
     metric = ns.metric()
     SP = ns.target  # set point
     err = 0
-    # Kp = 1  # adjustment on error to ramp up slower (0<Kp<1) or faster (Kp>1)
-    # errwindow = window(ns.lookback)
-    # addwindow = window(ns.lookback)
-    # addhist = addwindow.send(0)
-    # errhist = errwindow.send(0)
+    pvhist = window(ns.lookback)
 
     while True:
         PV = next(metric)  # process variable
+        pvdata = pvhist.send(PV)
+        if len(pvdata) > 10:
+            sp = np.fft.fft(pvdata)[:len(pvdata) / 2]
+            _freqs = np.fft.fftfreq(len(pvdata))[:len(pvdata) / 2]
+            freqs = _freqs[np.where(sp > sp.mean() + sp.std())]
+            # TODO: find phase for each freq
+            # then figure something like
+            # y = sum(sp_i * y_for_freq_i(PV) for all i in freqs)
         log.debug('got metric value', extra=dict(PV=PV))
         err = (SP - PV)
 
-        # sum_adds = sum(addhist)
-        # max_err = max(errhist)
-        # k = (sum_adds - max_err) / (ns.lookback - 1)
-        # k = -0
-        # MV = max_err + k * ns.lookback - sum_adds
-        # print MV, max_err, k, sum_adds
-
         MV = err  # int(MV / 2)
 
-        # addhist = addwindow.send(MV)
-        # errhist = errwindow.send(err)
         if MV <= 0:
             continue
         if MV > 0:
