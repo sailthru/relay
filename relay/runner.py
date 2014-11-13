@@ -41,21 +41,39 @@ def main(ns):
     SP = ns.target  # set point
     err = 0
     pvhist = window(ns.lookback)
+    maxweight = float('-inf')
 
     while True:
         PV = next(metric)  # process variable
         pvdata = pvhist.send(PV)
-        if len(pvdata) > 10:
+        if len(pvdata) > 50:
             sp = np.fft.fft(pvdata)[:len(pvdata) / 2]
-            _freqs = np.fft.fftfreq(len(pvdata))[:len(pvdata) / 2]
-            freqs = _freqs[np.where(sp > sp.mean() + sp.std())]
+            # freqs = np.arange(0, len(pvdata) / 2) / (ns.delay * len(pvdata))
+
+            # get the phase in degrees. use 0 to 360 rather than -180 to +180
+            phase = (np.angle(sp, True) + 180)
+            # then shift phase of each wavelength by half a period
+            # ie make a mirror image of a sin wave about the x axis
+            phase = (phase + 180) % 360
+
+            # get the amplitude of each frequency in the fft spectrum
+            amplitude = np.abs(sp)
+            weight = ((phase) / phase.sum() * amplitude / amplitude.sum()).sum()
+            if weight > maxweight:
+                maxweight = weight
+            else:
+                weight = weight / maxweight
+            # TODO: maxweight is a hack.  find a real bound
+            print weight
             # TODO: find phase for each freq
             # then figure something like
             # y = sum(sp_i * y_for_freq_i(PV) for all i in freqs)
+        else:
+            weight = 1
         log.debug('got metric value', extra=dict(PV=PV))
         err = (SP - PV)
 
-        MV = err  # int(MV / 2)
+        MV = int(err * weight)  # int(MV / 2)
 
         if MV <= 0:
             continue
@@ -135,6 +153,6 @@ build_arg_parser = at.build_arg_parser([
             ' receive arbitrary json-encoded log messages from relay.'
         )),
     at.add_argument(
-        '--lookback', default=100, type=int, help=(
+        '--lookback', default=1000, type=int, help=(
             'Keep a history of the last n PV samples for online tuning'))
 ])
