@@ -1,0 +1,3 @@
+- consider Gain Scheduling (different weights in different regions)
+- better bounds for the weight term
+- the phase shift ratio should only consider relevant samples and should ignore wavelengths below nyquist frequency
