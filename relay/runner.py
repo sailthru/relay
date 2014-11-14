@@ -48,26 +48,55 @@ def main(ns):
         pvdata = pvhist.send(PV)
         if len(pvdata) > 50:
             sp = np.fft.fft(pvdata)[:len(pvdata) / 2]
-            # freqs = np.arange(0, len(pvdata) / 2) / (ns.delay * len(pvdata))
 
-            # get the phase in degrees. use 0 to 360 rather than -180 to +180
-            phase = (np.angle(sp, True) + 180)
+            # get the phase in degrees.
             # then shift phase of each wavelength by half a period
             # ie make a mirror image of a sin wave about the x axis
+            # use 0 to 360 rather than -180 to +180 degrees
+            phase = (np.angle(sp, True) + 180)
             phase = (phase + 180) % 360
+            # instead of above, can I just do 180 + np.angle(sp, True) * -1
+
+            # TODO: get this to work
+            # find the integral of neighboring samples.
+            # search up to 1/2 wavelength to right and 1/2 wavelength to left
+            # from current phase
+            freqs = np.arange(0, len(pvdata) / 2 - 1) / (ns.delay * len(pvdata))
+            # phase difference between samples
+            # print freqs[0:2]
+            degrees_per_sample = (1 / freqs) * ns.delay
+            degrees_per_sample = (
+                np.arange(0, len(pvdata) / 2 - 1) * ns.delay * ns.delay
+                * len(pvdata))
+            # TODO: pretty sure this is wrong
+            # num degrees per sample in 1/2 the wavelength
+            num_neighbors = freqs / degrees_per_sample / 2
+            num_neighbors[np.isnan(num_neighbors)] = 0
+
+            # TODO: test that the below calculates the integral properly
+            phase_window_integrals = np.zeros(phase.size)
+            while num_neighbors[num_neighbors > 0].sum() > 1:
+                # TODO: this is incorrect until   += amplitude_at(...)
+                phase_window_integrals += (
+                    phase + num_neighbors * degrees_per_sample) % 360
+                phase_window_integrals += (
+                    phase - num_neighbors * degrees_per_sample) % 360
+                num_neighbors[num_neighbors >= 1] -= 1
 
             # get the amplitude of each frequency in the fft spectrum
             amplitude = np.abs(sp)
-            weight = ((phase) / phase.sum() * amplitude / amplitude.sum()).sum()
+            weight = (
+                phase / phase_window_integrals
+                * amplitude / amplitude.sum()
+            ).sum()
+
+            # bound weight so it's less than and potentially close to 1
             if weight > maxweight:
                 maxweight = weight
             else:
                 weight = weight / maxweight
             # TODO: maxweight is a hack.  find a real bound
             print weight
-            # TODO: find phase for each freq
-            # then figure something like
-            # y = sum(sp_i * y_for_freq_i(PV) for all i in freqs)
         else:
             weight = 1
         log.debug('got metric value', extra=dict(PV=PV))
