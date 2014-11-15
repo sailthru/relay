@@ -47,50 +47,49 @@ def main(ns):
         PV = next(metric)  # process variable
         pvdata = pvhist.send(PV)
         if len(pvdata) > 50:
-            sp = np.fft.fft(pvdata)[:len(pvdata) / 2]
+            sp = np.fft.fft(pvdata)[1: len(pvdata) / 2]
 
             # get the phase in degrees.
             # then shift phase of each wavelength by half a period
             # ie make a mirror image of a sin wave about the x axis
-            # use 0 to 360 rather than -180 to +180 degrees
-            phase = (np.angle(sp, True) + 180)
-            phase = (phase + 180) % 360
-            # instead of above, can I just do 180 + np.angle(sp, True) * -1
+            # TODO: do I want to make a mirror image before the integral?
+            phase = np.angle(sp, True) * -1
 
-            # TODO: get this to work
-            # find the integral of neighboring samples.
-            # search up to 1/2 wavelength to right and 1/2 wavelength to left
-            # from current phase
-            freqs = np.arange(0, len(pvdata) / 2 - 1) / (ns.delay * len(pvdata))
-            # phase difference between samples
-            # print freqs[0:2]
-            degrees_per_sample = (1 / freqs) * ns.delay
-            degrees_per_sample = (
-                np.arange(0, len(pvdata) / 2 - 1) * ns.delay * ns.delay
-                * len(pvdata))
-            # TODO: pretty sure this is wrong
-            # num degrees per sample in 1/2 the wavelength
-            num_neighbors = freqs / degrees_per_sample / 2
-            num_neighbors[np.isnan(num_neighbors)] = 0
+            # get the num degrees between samples
+            # fftfreqs = arange(0, num_samples/2) / (num_samples*delay)
+            # ans = fftfreqs * delay
+            num_degrees_between_samples = \
+                np.arange(1, len(pvdata) / 2) / len(pvdata)
+            n = 360 / num_degrees_between_samples
 
+            # find the amplitude integral of neighboring samples.
+            # search <360 degrees to left of most recent sample's phase
+            # p_i = phase - degrees_between_samples * i  # ith phase
             # TODO: test that the below calculates the integral properly
-            phase_window_integrals = np.zeros(phase.size)
-            while num_neighbors[num_neighbors > 0].sum() > 1:
+            amplitude_integrals = np.zeros(phase.size)
+            kth = n.copy()
+            while (kth > 0).any():
                 # TODO: this is incorrect until   += amplitude_at(...)
-                phase_window_integrals += (
-                    phase + num_neighbors * degrees_per_sample) % 360
-                phase_window_integrals += (
-                    phase - num_neighbors * degrees_per_sample) % 360
-                num_neighbors[num_neighbors >= 1] -= 1
+                # amplitude_at might be lambda x: (1 / np.abs(sp)) * x
+                # TODO: test performance of degrees < -180
+                amplitude_integrals += (
+                    phase - kth * num_degrees_between_samples)
+                kth[kth >= 0] -= 1
+                kth[kth < 0] = 0
 
             # get the amplitude of each frequency in the fft spectrum
             amplitude = np.abs(sp)
+            sign = np.sign(phase)  # TODO: is the amplitude positive or negative
+            # TODO: do I need this if I use signed phase window integrals?
             weight = (
-                phase / phase_window_integrals
+                # TODO: phase contains degrees between -180 and 180.
+                # shift it to positive numbers
+                amplitude * sign / amplitude_integrals
                 * amplitude / amplitude.sum()
             ).sum()
 
             # bound weight so it's less than and potentially close to 1
+            print weight
             if weight > maxweight:
                 maxweight = weight
             else:
