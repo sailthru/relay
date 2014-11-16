@@ -26,6 +26,43 @@ def window(n, initial_data=()):
         win.append((yield win))
 
 
+def calc_weight(pvdata):
+    sp = np.fft.fft(pvdata)[1: len(pvdata) // 2]
+    if sp.sum() == 0:  # there is no variation in the signal
+        log.warn('no variation in the signal.  fft cannot continue')
+        return 1
+
+    # get the phase in radians  # -np.pi < phase <= +np.pi
+    phase = np.angle(sp)  # radians
+
+    # find the amplitude integral of neighboring samples.
+    # search <360 degrees to left of most recent sample's phase
+    # p_k = phase - degrees_between_samples * k  # kth phase
+    amplitude_integrals = np.sin(phase)  # iteratively updated
+    # samples per cycle
+    kth = len(pvdata) / np.arange(1, len(pvdata) // 2)
+    num_degrees_between_samples = 2 * np.pi / kth
+    p_k = phase.copy()
+    while (kth > 0).any():
+        # find amplitude of a sign wave at specific phase
+        p_k -= num_degrees_between_samples
+        amplitude_integrals += np.abs(np.sin(p_k))
+        kth -= 1
+        idxs = kth > 0
+        not_idxs = ~idxs
+        kth = kth[idxs]
+        p_k[not_idxs] = 0
+        num_degrees_between_samples[not_idxs] = 0
+
+    # get the amplitude of each frequency in the fft spectrum
+    amplitude = np.abs(sp)
+
+    return (
+        (np.sin(phase) / amplitude_integrals)
+        * (amplitude / amplitude.sum())
+    ).sum()
+
+
 def main(ns):
     # logging... for some reason, the order in which you add handlers matters
     if ns.sendstats:
@@ -41,67 +78,23 @@ def main(ns):
     SP = ns.target  # set point
     err = 0
     pvhist = window(ns.lookback)
-    maxweight = float('-inf')
+    errhist = window(ns.lookback)
+    errramp = 1
 
     while True:
         PV = next(metric)  # process variable
         pvdata = pvhist.send(PV)
-        if len(pvdata) > 50:
-            sp = np.fft.fft(pvdata)[1: len(pvdata) / 2]
-
-            # get the phase in degrees.
-            # then shift phase of each wavelength by half a period
-            # ie make a mirror image of a sin wave about the x axis
-            # TODO: do I want to make a mirror image before the integral?
-            phase = np.angle(sp, True) * -1
-
-            # get the num degrees between samples
-            # fftfreqs = arange(0, num_samples/2) / (num_samples*delay)
-            # ans = fftfreqs * delay
-            num_degrees_between_samples = \
-                np.arange(1, len(pvdata) / 2) / len(pvdata)
-            n = 360 / num_degrees_between_samples
-
-            # find the amplitude integral of neighboring samples.
-            # search <360 degrees to left of most recent sample's phase
-            # p_i = phase - degrees_between_samples * i  # ith phase
-            # TODO: test that the below calculates the integral properly
-            amplitude_integrals = np.zeros(phase.size)
-            kth = n.copy()
-            while (kth > 0).any():
-                # TODO: this is incorrect until   += amplitude_at(...)
-                # amplitude_at might be lambda x: (1 / np.abs(sp)) * x
-                # TODO: test performance of degrees < -180
-                amplitude_integrals += (
-                    phase - kth * num_degrees_between_samples)
-                kth[kth >= 0] -= 1
-                kth[kth < 0] = 0
-
-            # get the amplitude of each frequency in the fft spectrum
-            amplitude = np.abs(sp)
-            sign = np.sign(phase)  # TODO: is the amplitude positive or negative
-            # TODO: do I need this if I use signed phase window integrals?
-            weight = (
-                # TODO: phase contains degrees between -180 and 180.
-                # shift it to positive numbers
-                amplitude * sign / amplitude_integrals
-                * amplitude / amplitude.sum()
-            ).sum()
-
-            # bound weight so it's less than and potentially close to 1
-            print weight
-            if weight > maxweight:
-                maxweight = weight
-            else:
-                weight = weight / maxweight
-            # TODO: maxweight is a hack.  find a real bound
-            print weight
-        else:
-            weight = 1
         log.debug('got metric value', extra=dict(PV=PV))
         err = (SP - PV)
+        errh = errhist.send(err)
 
-        MV = int(err * weight)  # int(MV / 2)
+        if errramp < (50 - 1) * (50 // 2):
+            MV = min(err, errramp)
+            errramp += 1
+        else:
+            weight = calc_weight(pvdata)
+            MV = int(err + np.abs(weight) * sum(errh)/len(errh))
+
 
         if MV <= 0:
             continue
