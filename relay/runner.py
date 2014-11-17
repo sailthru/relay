@@ -67,7 +67,9 @@ def main(ns):
     # logging... for some reason, the order in which you add handlers matters
     if ns.sendstats:
         if ns.sendstats == 'webui':
-            add_zmq_log_handler('tcp://127.0.0.1:2001')
+            add_zmq_log_handler('ipc:///tmp/relaylog')
+        else:
+            add_zmq_log_handler(ns.sendstats)
     configure_logging(True)
     log.info(
         "Starting relay!", extra={k: str(v) for k, v in ns.__dict__.items()})
@@ -75,45 +77,54 @@ def main(ns):
         start_webui()
 
     metric = ns.metric()
+    target = ns.target()
     SP = ns.target  # set point
     err = 0
     pvhist = window(ns.lookback)
-    errhist = window(ns.lookback)
     errramp = 1
 
     while True:
-        PV = next(metric)  # process variable
-        pvdata = pvhist.send(PV)
-        log.debug('got metric value', extra=dict(PV=PV))
-        err = (SP - PV)
-        errh = errhist.send(err)
+        SP = next(target)
 
-        if errramp < (50 - 1) * (50 // 2):
-            MV = min(err, errramp)
+        PV = next(metric)  # process variable
+        err = (SP - PV)
+        pvdata = pvhist.send(err)
+        log.debug('got metric value', extra=dict(PV=PV, SP=SP))
+
+        if errramp < (err - 1) * (err // 2):
+            MV = int(min(err, errramp))
             errramp += 1
         else:
             weight = calc_weight(pvdata)
-            MV = int(err + np.abs(weight) * sum(errh)/len(errh))
+            MV = int(err + np.abs(weight) * sum(pvdata)/len(pvdata))
+            log.info('data', extra=dict(data=[
+                err, weight,
+                sum(pvdata) / len(pvdata)]))
 
-
-        if MV <= 0:
-            continue
         if MV > 0:
             if ns.warmer:
                 log.debug('adding heat', extra=dict(MV=MV, err=err))
                 ns.warmer(MV)
             else:
-                log.warn('too cold', extra=dict(MV=+0, err=err))
+                log.warn('too cold')
         elif MV < 0:
             if ns.cooler:
                 log.debug('removing heat', extra=dict(MV=MV, err=err))
                 ns.cooler(MV)
             else:
-                log.warn('too hot', extra=dict(MV=-0, err=err))
+                log.warn('too hot')
         else:
             log.debug(
-                'stabilized PV at setpoint', extra=dict(MV=MV, PV=PV))
+                'stabilized PV at setpoint', extra=dict(MV=MV, PV=PV, SP=SP))
         time.sleep(ns.delay)
+
+
+def targettype(x):
+    try:
+        _target = int(x)
+        return lambda: (_target for _ in iter(int, 1))
+    except ValueError:
+        return util.load_obj_from_path(x, prefix='relay.plugins')
 
 
 build_arg_parser = at.build_arg_parser([
@@ -142,7 +153,7 @@ build_arg_parser = at.build_arg_parser([
             '  "mycode.my_warmer_func"\n'
         )),
     at.add_argument(
-        '-t', '--target', default=0, type=int, help=(
+        '-t', '--target', default=targettype(0), type=targettype, help=(
             "A target value that the metric we're watching should stabilize at."
             ' For instance, if relay is monitoring a queue size, the target'
             ' value is 0.  In a PID controller, this value corresponds'
