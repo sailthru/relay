@@ -6,7 +6,7 @@
   <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
 	<script type="text/javascript">
 	window.onload = function () {
-    arrs = {pvdata: [], mvdata: []}  // datapoints
+    arrs = {pvdata: [], mvdata: [], spdata: []}  // datapoints
 		var dataLength = 1000; // number of dataPoints visible at any point
     for (var arrname in arrs) {
       for (var x=0 ; x < dataLength ; x++) {
@@ -37,6 +37,12 @@
         dataPoints: arrs['mvdata'],
         showInLegend: true,
         name: "MV (manipulated variable - the amount of heat we're adding)"
+      },
+      {
+        type: "line",
+        dataPoints: arrs['spdata'],
+        showInLegend: true,
+        name: "SP (set point - the target value the metric should match)"
       }
     ]
 		});
@@ -62,6 +68,7 @@
     var socket = io('http://localhost:8080');
     socket.on('pvdata', function(obj) {x++; update(obj, 'pvdata', true);});
     socket.on('mvdata', function(obj) {update(obj, 'mvdata', false);});
+    socket.on('spdata', function(obj) {update(obj, 'spdata', false);});
     <!-- setInterval(function() {update({y: x % 20})}, 20); -->
   }
 	</script>

@@ -6,7 +6,7 @@ var io = require('socket.io')(server);
 // receive zmq messages
 var zmq = require('zmq');
 var subscriber = zmq.socket('sub');
-subscriber.connect('tcp://127.0.0.1:2001');
+subscriber.connect('ipc:///tmp/relaylog');
 subscriber.subscribe('');
 
 // when a client connects via websockets,
@@ -20,6 +20,9 @@ io.on('connection', function (socket) {
     }
     if (payload.MV) {
       socket.emit('mvdata', {y: payload.MV});
+    }
+    if (payload.SP) {
+      socket.emit('spdata', {y: payload.SP});
     }
   });
 });
