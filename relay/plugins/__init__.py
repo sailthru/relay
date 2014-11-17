@@ -38,6 +38,28 @@ def metric():
 #####
 
 
+def oscillating_setpoint(_square_wave=False):
+    """A basic example of a target that you may want to approximate.
+
+    If you have a thermostat, this is a temperature setting.
+    This target can't change too often
+    """
+    import math
+    c = 0
+    while 1:
+        if _square_wave:
+            yield ((c % 300) < 150) * 20
+            c += 1
+        else:
+            yield 10 * math.sin(2 * 3.1415926 * c) \
+                + 20 + 5 * math.sin(2 * 3.1415926 * c * 3)
+            c += .001
+
+
+def squarewave_setpoint():
+    return oscillating_setpoint(True)
+
+
 def bash_echo_metric():
     """A very basic example that monitors
     a number of currently running processes"""
@@ -71,7 +93,7 @@ def bash_echo_warmer(n):
     )
     for i in range(n):
         subprocess.Popen(
-            cmd % ((1 + random.random()) ** 0, (1 + random.random() ** 2)),
+            cmd % ((1 + random.random()) * 9, (1 + random.random() * 9)),
             shell=True, stdout=subprocess.PIPE)
 
 
