@@ -26,8 +26,8 @@ def window(n, initial_data=()):
         win.append((yield win))
 
 
-def calc_weight(pvdata):
-    sp = np.fft.fft(pvdata)[1: len(pvdata) // 2]
+def calc_weight(errdata):
+    sp = np.fft.fft(errdata)[1: len(errdata) // 2]
     if sp.sum() == 0:  # there is no variation in the signal
         log.warn('no variation in the signal.  fft cannot continue')
         return 1
@@ -40,7 +40,7 @@ def calc_weight(pvdata):
     # p_k = phase - degrees_between_samples * k  # kth phase
     amplitude_integrals = np.sin(phase)  # iteratively updated
     # samples per cycle
-    kth = len(pvdata) / np.arange(1, len(pvdata) // 2)
+    kth = len(errdata) / np.arange(1, len(errdata) // 2)
     num_degrees_between_samples = 2 * np.pi / kth
     p_k = phase.copy()
     while (kth > 0).any():
@@ -80,7 +80,7 @@ def main(ns):
     target = ns.target()
     SP = ns.target  # set point
     err = 0
-    pvhist = window(ns.lookback)
+    errhist = window(ns.lookback)
     errramp = 1
 
     while True:
@@ -88,18 +88,18 @@ def main(ns):
 
         PV = next(metric)  # process variable
         err = (SP - PV)
-        pvdata = pvhist.send(err)
+        errdata = errhist.send(err)
         log.debug('got metric value', extra=dict(PV=PV, SP=SP))
 
         if errramp < 10:
             MV = int(np.sign(err))
             errramp += 1
         else:
-            weight = calc_weight(pvdata)
-            MV = int(err + -1 * weight * sum(pvdata)/len(pvdata))
+            weight = calc_weight(errdata)
+            MV = int(err + -1 * weight * sum(errdata)/len(errdata))
             log.info('data', extra=dict(data=[
                 err, weight,
-                sum(pvdata) / len(pvdata)]))
+                sum(errdata) / len(errdata)]))
 
         if MV > 0:
             if ns.warmer:
