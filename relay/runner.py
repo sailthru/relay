@@ -91,12 +91,12 @@ def main(ns):
         pvdata = pvhist.send(err)
         log.debug('got metric value', extra=dict(PV=PV, SP=SP))
 
-        if errramp < (err - 1) * (err // 2):
-            MV = int(min(err, errramp))
+        if errramp < 10:
+            MV = int(np.sign(err))
             errramp += 1
         else:
             weight = calc_weight(pvdata)
-            MV = int(err + np.abs(weight) * sum(pvdata)/len(pvdata))
+            MV = int(err + -1 * weight * sum(pvdata)/len(pvdata))
             log.info('data', extra=dict(data=[
                 err, weight,
                 sum(pvdata) / len(pvdata)]))
