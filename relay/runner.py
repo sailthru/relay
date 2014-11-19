@@ -63,6 +63,39 @@ def calc_weight(errdata):
     ).sum()
 
 
+def create_ramp_plan(err, ramp):
+    """
+    Formulate and execute on a plan to slowly add heat or cooling to the system
+
+    `err` initial error (PV - SP)
+    `ramp` the size of the ramp
+
+    A ramp plan might yield MVs in this order at every timestep:
+        [5, 0, 4, 0, 3, 0, 2, 0, 1]
+        where err == 5 + 4 + 3 + 2 + 1
+    """
+    if ramp == 1:  # basecase
+        yield err
+        while True:
+            yield 0
+    # np.arange(n).sum() == err
+    # --> solve for n
+    # err = (n - 1) * (n // 2) == .5 * n**2 - .5 * n
+    # 0 = n**2 - n - 2*err  --> solve for n
+    n = np.abs(np.roots([.5, -.5, -err]).max())
+    niter = int(ramp // (2 * n))  # 2 means add all MV in first half of ramp
+    MV = int(n)
+    log.info('Initializing a ramp plan', extra=dict(
+        ramp_size=ramp, err=err, niter=niter))
+    for x in range(int(n)):
+        yield np.sign(err) * MV
+        MV -= 1
+        for x in range(niter):
+            yield 0
+    while True:
+        yield 0
+
+
 def main(ns):
     # logging... for some reason, the order in which you add handlers matters
     if ns.sendstats:
@@ -79,21 +112,23 @@ def main(ns):
     metric = ns.metric()
     target = ns.target()
     errhist = window(ns.lookback)
-    errramp = 1
+    ramp_index = 0
 
     while True:
         SP = next(target)  # set point
         PV = next(metric)  # process variable
         err = (SP - PV)
-        errdata = errhist.send(err)
         log.debug('got metric value', extra=dict(PV=PV, SP=SP))
-
-        if errramp < 10:
-            MV = int(np.sign(err))
-            errramp += 1
+        if ramp_index < ns.ramp:
+            if ramp_index == 0:
+                plan = create_ramp_plan(err, ns.ramp)
+            ramp_index += 1
+            MV = next(plan)
+            errdata = errhist.send(0)
         else:
+            errdata = errhist.send(err)
             weight = calc_weight(errdata)
-            MV = int(err + -1 * weight * sum(errdata)/len(errdata))
+            MV = int(err + -1 * weight * sum(errdata) / len(errdata))
             log.info('data', extra=dict(data=[
                 err, weight,
                 sum(errdata) / len(errdata)]))
@@ -160,7 +195,7 @@ build_arg_parser = at.build_arg_parser([
             ' to the setpoint (SP).'
         )),
     at.add_argument(
-        '-c', '--cooler',
+        '-c', '--cooler', default=os.environ.get('RELAY_COOLER'),
         type=lambda x: util.load_obj_from_path(x, prefix='relay.plugins'),
         help=(
             ' This should point to a function or class that terminates n'
@@ -186,5 +221,12 @@ build_arg_parser = at.build_arg_parser([
         )),
     at.add_argument(
         '--lookback', default=1000, type=int, help=(
-            'Keep a history of the last n PV samples for online tuning'))
+            'Keep a history of the last n PV samples for online tuning')),
+    at.add_argument(
+        '--ramp', default=1, type=int, help=(
+            'Ramp up the first n samples.  Useful if Relay tends to overheat'
+            ' or overcool in the beginning.  In the first half of the ramp,'
+            ' Relay will add heat or cooling as appropriate.  In the second'
+            ' half, it will simply record the metric values.  We suggest'
+            ' setting this to avg_task_length / 2*delay')),
 ])
