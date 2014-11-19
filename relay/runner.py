@@ -78,14 +78,11 @@ def main(ns):
 
     metric = ns.metric()
     target = ns.target()
-    SP = ns.target  # set point
-    err = 0
     errhist = window(ns.lookback)
     errramp = 1
 
     while True:
-        SP = next(target)
-
+        SP = next(target)  # set point
         PV = next(metric)  # process variable
         err = (SP - PV)
         errdata = errhist.send(err)
@@ -122,7 +119,10 @@ def main(ns):
 def targettype(x):
     try:
         _target = int(x)
-        return lambda: (_target for _ in iter(int, 1))
+
+        def infinite_iterator():
+            return (_target for _ in iter(int, 1))
+        return infinite_iterator
     except ValueError:
         return util.load_obj_from_path(x, prefix='relay.plugins')
 
