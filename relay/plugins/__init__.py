@@ -67,7 +67,8 @@ def bash_echo_metric():
     import random
 
     # more predictable version of the metric
-    cmd = 'pgrep -f "from bash: started relay launcher" |wc -l'
+    cmd = (
+        'pgrep -f "^bash -c sleep .*from bash: started relay launcher" |wc -l')
 
     # less predictable version of the metric
     # cmd = 'ps aux|wc -l'
@@ -94,7 +95,7 @@ def bash_echo_warmer(n):
     for i in range(n):
         subprocess.Popen(
             cmd % ((1 + random.random()) * 1, (1 + random.random()) * 9),
-            shell=True, stdout=subprocess.PIPE)
+            shell=True, stdout=subprocess.PIPE, executable='bash')
 
 
 def bash_echo_cooler(n):
