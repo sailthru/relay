@@ -33,12 +33,13 @@ def configure_logging(add_handler):
     if isinstance(add_handler, logging.Handler):
         log.addHandler(add_handler)
     elif add_handler is True:
-        _h = logging.StreamHandler()
-        _h.setFormatter(ColoredJsonFormatter(
-            "%(log_color)s%(levelname)-8s %(message)s %(reset)s %(cyan)s",
-            reset=True
-        ))
-        log.addHandler(_h)
+        if not any(isinstance(h, logging.StreamHandler) for h in log.handlers):
+            _h = logging.StreamHandler()
+            _h.setFormatter(ColoredJsonFormatter(
+                "%(log_color)s%(levelname)-8s %(message)s %(reset)s %(cyan)s",
+                reset=True
+            ))
+            log.addHandler(_h)
     elif not log.handlers:
         log.addHandler(logging.NullHandler())
     log.setLevel(logging.DEBUG)

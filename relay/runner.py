@@ -99,17 +99,15 @@ def create_ramp_plan(err, ramp):
 
 
 def main(ns):
-    # logging... for some reason, the order in which you add handlers matters
+    configure_logging(True)
     if ns.sendstats:
         if ns.sendstats == 'webui':
             add_zmq_log_handler('ipc:///tmp/relaylog')
+            start_webui()
         else:
             add_zmq_log_handler(ns.sendstats)
-    configure_logging(True)
     log.info(
         "Starting relay!", extra={k: str(v) for k, v in ns.__dict__.items()})
-    if ns.sendstats == 'webui':
-        start_webui()
 
     metric = ns.metric()
     target = ns.target()
