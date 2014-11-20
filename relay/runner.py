@@ -1,5 +1,4 @@
 from __future__ import division
-import argparse_tools as at
 from collections import deque
 import numpy as np
 import os
@@ -9,6 +8,7 @@ import time
 
 from relay import log, configure_logging, add_zmq_log_handler
 from relay import util
+from relay import argparse_shared as at
 
 
 def start_webui():
@@ -153,84 +153,14 @@ def main(ns):
         time.sleep(ns.delay)
 
 
-def targettype(x):
-    try:
-        _target = int(x)
-
-        def infinite_iterator():
-            return (_target for _ in iter(int, 1))
-        return infinite_iterator
-    except ValueError:
-        return util.load_obj_from_path(x, prefix='relay.plugins')
-
-
 build_arg_parser = at.build_arg_parser([
-    at.add_argument(
-        '-m', '--metric', required=True,
-        default=os.environ.get('RELAY_METRIC'),
-        type=lambda x: util.load_obj_from_path(x, prefix='relay.plugins'),
-        help=(
-            ' This should point to generator (function or class) that,'
-            ' when called, returns a metric value.  In a PID controller, this'
-            ' corresponds to the process variable (PV).'
-            '  Valid examples:\n'
-            '  "bash_echo_metric"'
-            '  (this loads relay.plugins.bash_echo_metric),\n'
-            '  "relay.plugins.bash_echo_metric",\n'
-            '  "mycode.custom_metric"\n'
-        )),
-    at.add_argument(
-        '-w', '--warmer', default=os.environ.get('RELAY_WARMER'),
-        type=lambda x: util.load_obj_from_path(x, prefix='relay.plugins'),
-        help=(
-            ' This should point to a function that starts n additional tasks.'
-            ' In a PID controller, this is the manipulated variable (MV).'
-            '  Valid examples:\n'
-            '  "bash_echo_warmer",\n'
-            '  "relay.plugins.bash_echo_warmer",\n'
-            '  "mycode.my_warmer_func"\n'
-        )),
-    at.add_argument(
-        '-t', '--target',
-        default=os.environ.get('RELAY_TARGET', targettype(0)),
-        type=targettype, help=(
-            "A target value that the metric we're watching should stabilize"
-            " at."
-            ' For instance, if relay is monitoring a queue size, the target'
-            ' value is 0.  In a PID controller, this value corresponds'
-            ' to the setpoint (SP).'
-        )),
-    at.add_argument(
-        '-c', '--cooler', default=os.environ.get('RELAY_COOLER'),
-        type=lambda x: util.load_obj_from_path(x, prefix='relay.plugins'),
-        help=(
-            ' This should point to a function or class that terminates n'
-            " instances of your tasks."
-            '  In a PID controller, this is the manipulated variable (MV).'
-            " You may not want to implement"
-            " both a warmer and a cooler.  Does your thermostat toggle"
-            " the heating element and air conditioner at the same time?"
-            " For valid examples, see the --warmer syntax"
-        )),
-    at.add_argument(
-        '-d', '--delay', type=float, default=os.environ.get('RELAY_DELAY', 1),
-        help='num seconds to wait between metric polling'),
-    at.add_argument(
-        '--sendstats', default=os.environ.get('RELAY_SENDSTATS'), help=(
-            'You can visualize how well relay is'
-            ' tuned to your particular metric with the stats generated.'
-            ' If "--sendstats webui" passed, spin up a node.js webserver in a'
-            ' subshell and pass to it the json log messages.'
-            ' If any other argument is'
-            ' passed, it must be a zmq uri that will'
-            ' receive arbitrary json-encoded log messages from relay.'
-        )),
-    at.add_argument(
-        '--lookback', default=os.environ.get('RELAY_LOOKBACK', 1000), type=int,
-        help=(
-            'Keep a history of the last n PV samples for online tuning')),
-    at.add_argument(
-        '--ramp', type=int, default=os.environ.get('RELAY_RAMP', 1), help=(
-            'Add heat or cooling over the first n samples.  This is useful'
-            ' if you do not want to add a lot of heat all at once')),
+    at.group(
+        "What is Relay optimizing?",
+        at.metric, at.target),
+    at.group(
+        "Instruct Relay how to heat or cool your metric",
+        at.warmer, at.cooler),
+    at.group(
+        "Some optional Relay parameters",
+        at.delay, at.lookback, at.ramp, at.sendstats),
 ])

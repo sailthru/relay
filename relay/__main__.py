@@ -1,7 +1,7 @@
 """
 Convert a directory into an executable
 """
-from relay.runner import build_arg_parser, main
+from relay.runner import main, build_arg_parser
 
 
 def go():
