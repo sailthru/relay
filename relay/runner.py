@@ -84,14 +84,16 @@ def create_ramp_plan(err, ramp):
     # 0 = n**2 - n - 2*err  --> solve for n
     n = np.abs(np.roots([.5, -.5, -err]).max())
     niter = int(ramp // (2 * n))  # 2 means add all MV in first half of ramp
-    MV = int(n)
+    MV = n
     log.info('Initializing a ramp plan', extra=dict(
         ramp_size=ramp, err=err, niter=niter))
     for x in range(int(n)):
-        yield np.sign(err) * MV
-        MV -= 1
+        budget = MV
         for x in range(niter):
-            yield 0
+            budget -= MV // niter
+            yield int(np.sign(err) * (MV // niter))
+        yield int(budget * np.sign(err))
+        MV -= 1
     while True:
         yield 0
 
@@ -164,7 +166,7 @@ def targettype(x):
 
 build_arg_parser = at.build_arg_parser([
     at.add_argument(
-        '-m', '--metric', required=True,
+        '-m', '--metric', required=True, default=os.environ.get('RELAY_METRIC'),
         type=lambda x: util.load_obj_from_path(x, prefix='relay.plugins'),
         help=(
             ' This should point to generator (function or class) that,'
@@ -177,7 +179,7 @@ build_arg_parser = at.build_arg_parser([
             '  "mycode.custom_metric"\n'
         )),
     at.add_argument(
-        '-w', '--warmer',
+        '-w', '--warmer', default=os.environ.get('RELAY_WARMER'),
         type=lambda x: util.load_obj_from_path(x, prefix='relay.plugins'),
         help=(
             ' This should point to a function that starts n additional tasks.'
@@ -188,7 +190,8 @@ build_arg_parser = at.build_arg_parser([
             '  "mycode.my_warmer_func"\n'
         )),
     at.add_argument(
-        '-t', '--target', default=targettype(0), type=targettype, help=(
+        '-t', '--target', default=os.environ.get('RELAY_TARGET', targettype(0)),
+        type=targettype, help=(
             "A target value that the metric we're watching should stabilize at."
             ' For instance, if relay is monitoring a queue size, the target'
             ' value is 0.  In a PID controller, this value corresponds'
@@ -210,7 +213,7 @@ build_arg_parser = at.build_arg_parser([
         '-d', '--delay', type=float, default=os.environ.get('RELAY_DELAY', 1),
         help='num seconds to wait between metric polling'),
     at.add_argument(
-        '--sendstats', help=(
+        '--sendstats', default=os.environ.get('RELAY_SENDSTATS'), help=(
             'You can visualize how well relay is'
             ' tuned to your particular metric with the stats generated.'
             ' If "--sendstats webui" passed, spin up a node.js webserver in a'
@@ -220,13 +223,11 @@ build_arg_parser = at.build_arg_parser([
             ' receive arbitrary json-encoded log messages from relay.'
         )),
     at.add_argument(
-        '--lookback', default=1000, type=int, help=(
+        '--lookback', default=os.environ.get('RELAY_LOOKBACK', 1000), type=int,
+        help=(
             'Keep a history of the last n PV samples for online tuning')),
     at.add_argument(
-        '--ramp', default=1, type=int, help=(
-            'Ramp up the first n samples.  Useful if Relay tends to overheat'
-            ' or overcool in the beginning.  In the first half of the ramp,'
-            ' Relay will add heat or cooling as appropriate.  In the second'
-            ' half, it will simply record the metric values.  We suggest'
-            ' setting this to avg_task_length / 2*delay')),
+        '--ramp', type=int, default=os.environ.get('RELAY_RAMP', 1), help=(
+            'Add heat or cooling over the first n samples.  This is useful'
+            ' if you do not want to add a lot of heat all at once')),
 ])
