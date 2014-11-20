@@ -48,7 +48,7 @@ def oscillating_setpoint(_square_wave=False):
     c = 0
     while 1:
         if _square_wave:
-            yield ((c % 300) < 150) * 20
+            yield ((c % 300) < 150) * 30 + 20
             c += 1
         else:
             yield 10 * math.sin(2 * 3.1415926 * c) \
@@ -94,7 +94,7 @@ def bash_echo_warmer(n):
     )
     for i in range(n):
         subprocess.Popen(
-            cmd % ((1 + random.random()) * 1, (1 + random.random()) * 9),
+            cmd % ((1 + random.random()) * 1, (1 + random.random()) * 4),
             shell=True, stdout=subprocess.PIPE, executable='bash')
 
 
