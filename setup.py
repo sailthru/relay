@@ -10,13 +10,16 @@ setup(
     name='Relay',
     version='0.0.1',
     description=(
-        'Run an arbitrary bash command as a mesos framework.'
-        ' Scale up number of concurrently running instances based on a metric.'
-        ' Generally good for auto-scaling workers.  Very similar to Marathon,'
-        ' but designed for applications that quit or fail often.'
+        'A smart thermostat.  Given a "metric", a timeseries that should'
+        ' approach a given "target," add heat or coolant as necessary to'
+        ' make the metric approach the target at a given point in time.'
+        ' For instance, use Relay to auto-scale workers in large'
+        ' distributed systems.'
     ),
     long_description="Check the project homepage for details",
-    keywords=['mesos', 'marathon', 'relay', 'framework'],
+    keywords=[
+        'relay', 'pid', 'pid controller', 'thermostat', 'tuning',
+        'oscilloscope', 'auto-scale'],
 
     author='Alex Gaudio',
     author_email='adgaudio@gmail.com',
@@ -28,7 +31,6 @@ setup(
 
     extras_require={
         'webui': ['pyzmq'],
-        'mesos': ['mesos.native', 'mesos.cli', 'mesos.interface'],
     },
     tests_require=['nose'],
     test_suite="nose.main",
