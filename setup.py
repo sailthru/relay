@@ -7,14 +7,13 @@ except ImportError:
     raise
 
 setup(
-    name='Relay',
+    name='relay.runner',
     version='0.1.1.dev0',
     description=(
-        'A smart thermostat.  Given a "metric", a timeseries that should'
-        ' approach a given "target," add heat or coolant as necessary to'
-        ' make the metric approach the target at a given point in time.'
-        ' For instance, use Relay to auto-scale workers in large'
-        ' distributed systems.'
+        'A smart thermostat.  Given a metric, or some timeseries that should'
+        ' approach a given target, add heat or coolant as necessary'
+        ' You can use Relay to auto-scale workers in large'
+        ' distributed systems or do anything a thermostat might do.'
     ),
     long_description="Check the project homepage for details",
     keywords=[
