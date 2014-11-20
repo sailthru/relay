@@ -75,7 +75,7 @@ def create_ramp_plan(err, ramp):
         where err == 5 + 4 + 3 + 2 + 1
     """
     if ramp == 1:  # basecase
-        yield err
+        yield int(err)
         while True:
             yield 0
     # np.arange(n).sum() == err
