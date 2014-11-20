@@ -16,7 +16,8 @@ def getstream(address):
 def populate(df, n, stream):
     m = df.shape[0]
     while True:
-        _, j = next(stream), next(stream)
+        next(stream)
+        j = next(stream)
 
         d = json.loads(j).get('data')
         if d:
@@ -34,9 +35,10 @@ def plot_df(df):
 
 
 address = 'ipc:///tmp/relaylog'
-df = pd.DataFrame(columns=[0,1,2])
+df = pd.DataFrame(columns=[0, 1, 2])
 populate(df, 500, getstream(address))
 plot_df(df)
 
 
-import IPython ; IPython.embed() ; import sys ; sys.exit()
+import IPython
+IPython.embed()

@@ -121,6 +121,8 @@ def check_files(files, check):
 
 def find_py_files(path):
     for cfile in glob.glob(os.path.join(path, '*')):
+        if os.path.basename(cfile) == 'node_modules':
+            continue
         if os.path.isdir(cfile):
             for py in find_py_files(cfile):
                 yield py

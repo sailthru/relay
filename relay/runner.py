@@ -166,7 +166,8 @@ def targettype(x):
 
 build_arg_parser = at.build_arg_parser([
     at.add_argument(
-        '-m', '--metric', required=True, default=os.environ.get('RELAY_METRIC'),
+        '-m', '--metric', required=True,
+        default=os.environ.get('RELAY_METRIC'),
         type=lambda x: util.load_obj_from_path(x, prefix='relay.plugins'),
         help=(
             ' This should point to generator (function or class) that,'
@@ -190,9 +191,11 @@ build_arg_parser = at.build_arg_parser([
             '  "mycode.my_warmer_func"\n'
         )),
     at.add_argument(
-        '-t', '--target', default=os.environ.get('RELAY_TARGET', targettype(0)),
+        '-t', '--target',
+        default=os.environ.get('RELAY_TARGET', targettype(0)),
         type=targettype, help=(
-            "A target value that the metric we're watching should stabilize at."
+            "A target value that the metric we're watching should stabilize"
+            " at."
             ' For instance, if relay is monitoring a queue size, the target'
             ' value is 0.  In a PID controller, this value corresponds'
             ' to the setpoint (SP).'

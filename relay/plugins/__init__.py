@@ -83,8 +83,8 @@ def bash_echo_metric():
 def bash_echo_warmer(n):
     """A very basic example of how to create n additional tasks.
     This is a warmer function with randomly delayed effects on the
-    bash_echo_metric and random task lengths to make the metric less predictable
-
+    bash_echo_metric and random task lengths to make the metric less
+    predictable
     """
     import subprocess
     import random
