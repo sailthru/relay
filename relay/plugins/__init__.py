@@ -27,8 +27,27 @@ def cooler(n):
 
 
 def metric():
-    """A generator function that represents some timeseries.
-    For instance this function could yield the current temperature"""
+    """A metric is a number stream that Relay polls every so often.
+    Relay implicitly modifies this number stream when it calls the
+    warmer() and cooler() functions.
+    Relay attempts to minimize the difference between the current metric
+    value and your current target value.
+
+    This function could, for instance, yield the current temperature
+
+    This function should be a generator.
+    """
+    while True:
+        yield 0
+
+
+def target():
+    """
+    A target is a number stream that Relay polls every so often.
+    It defines a goal you'd like your metric to reach.
+    Relay attempts to minimize the difference between the current metric
+    value and your current target value.
+    """
     while True:
         yield 0
 
