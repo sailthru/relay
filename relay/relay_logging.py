@@ -4,7 +4,7 @@ from colorlog import ColoredFormatter
 from relay import log
 
 
-def configure_logging(add_handler):
+def configure_logging(add_handler, log=log):
     """
     Configure log records.  If adding a handler, make the formatter print all
     passed in key:value data.
