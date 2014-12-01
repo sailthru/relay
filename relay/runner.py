@@ -5,6 +5,7 @@ import os
 from os.path import abspath, dirname, join
 import subprocess
 import time
+import threading
 
 from relay import log, configure_logging, add_zmq_log_handler
 from relay import util
@@ -136,13 +137,13 @@ def main(ns):
         if MV > 0:
             if ns.warmer:
                 log.debug('adding heat', extra=dict(MV=MV, err=err))
-                ns.warmer(MV)
+                threading.Thread(target=ns.warmer, args=(MV,)).start()
             else:
                 log.warn('too cold')
         elif MV < 0:
             if ns.cooler:
                 log.debug('removing heat', extra=dict(MV=MV, err=err))
-                ns.cooler(MV)
+                threading.Thread(target=ns.cooler, args=(MV,)).start()
             else:
                 log.warn('too hot')
         else:
