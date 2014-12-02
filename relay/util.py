@@ -70,6 +70,6 @@ def load_obj_from_path(import_path, prefix=None, ld=dict()):
 def coroutine(func):
     def f(*args, **kwargs):
         g = func(*args, **kwargs)
-        g.next()
+        next(g)
         return g
     return f

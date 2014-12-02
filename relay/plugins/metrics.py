@@ -14,14 +14,14 @@ class MetricPluginInterface(collections.Iterator):
     def __init__(self, config):
         pass  # do nothing with config
 
-    def next(self):
+    def __next__(self):
         """Return an integer number"""
         raise NotImplementedError()
 
 
 class Always1(object):
     """An example metric that always returns 1"""
-    def next(self):
+    def __next__(self):
         return 1
 
 

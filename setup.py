@@ -26,13 +26,14 @@ setup(
 
     packages=find_packages(),
     include_package_data=True,
-    install_requires=['argparse_tools', 'colorlog'],
+    install_requires=['argparse_tools', 'colorlog', 'numpy'],
 
     extras_require={
         'webui': ['pyzmq'],
     },
     tests_require=['nose'],
     test_suite="nose.main",
+    zip_safe=True,
 
     entry_points = {
         'console_scripts': [
