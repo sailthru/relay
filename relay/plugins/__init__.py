@@ -83,18 +83,21 @@ def bash_echo_metric():
     """A very basic example that monitors
     a number of currently running processes"""
     import subprocess
-    import random
+    # import random
 
     # more predictable version of the metric
     cmd = (
-        'pgrep -f "^bash -c sleep .*from bash: started relay launcher" |wc -l')
+        'set -o pipefail '
+        ' ; pgrep -f "^bash.*sleep .*from bash: started relay launcher"'
+        ' | wc -l '
+    )
 
     # less predictable version of the metric
     # cmd = 'ps aux|wc -l'
 
     while True:
         yield (
-            int(subprocess.check_output(cmd, shell=True))
+            int(subprocess.check_output(cmd, shell=True, executable='bash'))
             # + random.choice([-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8])
         )
 
@@ -108,7 +111,8 @@ def bash_echo_warmer(n):
     import subprocess
     import random
     cmd = (
-        "sleep %s "
+        'set -o pipefail '
+        " ; sleep %s "
         " ; sh -c 'echo from bash: started relay launcher task && sleep %s'"
     )
     for i in range(n):
@@ -123,6 +127,7 @@ def bash_echo_cooler(n):
     """
     import subprocess
     cmd = (
-        'kill `pgrep -f "from bash: started relay launcher task"'
-        ' |tail -n %s` 2>/dev/null' % n)
-    subprocess.Popen(cmd, shell=True).wait()
+        'set -o pipefile '
+        ' ; kill `pgrep -f "from bash: started relay launcher task"'
+        ' | tail -n %s` 2>/dev/null' % n)
+    subprocess.Popen(cmd, shell=True, executable='bash').wait()

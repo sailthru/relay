@@ -6,9 +6,15 @@ var io = require('socket.io')(server);
 // receive zmq messages
 var zmq = require('zmq');
 var subscriber = zmq.socket('sub');
-// subscriber.connect('ipc:///tmp/relaylog');
-subscriber.connect('tcp://0.0.0.0:5846');
+if (process.argv[2]) {
+  console.log('zmq binding to address ' + process.argv[2]);
+  subscriber.bindSync(process.argv[2]);
+} else {
+  console.log('zmq binding to address ' + 'ipc:///tmp/relaylog');
+  subscriber.bindSync('ipc:///tmp/relaylog');
+}
 subscriber.subscribe('');
+console.log('zmq initialized')
 
 // when a client connects via websockets,
 // forward relevant zmq message data to the client
