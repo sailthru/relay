@@ -5,6 +5,7 @@ import numpy as np
 import os
 from os.path import abspath, dirname, join
 import subprocess
+import sys
 import time
 import threading
 
@@ -101,6 +102,9 @@ def create_ramp_plan(err, ramp):
 
 
 def main(ns):
+    if None in [ns.warmer, ns.cooler, ns.target, ns.metric]:
+        build_arg_parser().print_help()
+        sys.exit(1)
     configure_logging(True)
     if ns.sendstats:
         if ns.sendstats == 'webui':
