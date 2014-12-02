@@ -101,10 +101,21 @@ def create_ramp_plan(err, ramp):
         yield 0
 
 
-def main(ns):
-    if None in [ns.warmer, ns.cooler, ns.target, ns.metric]:
-        build_arg_parser().print_help()
+def validate_ns_or_sysexit(ns):
+    ex = 0
+    if None in [ns.target, ns.metric]:
+        log.error("you must define a --metric and --target!")
+        ex = 1
+    if ns.warmer is None and ns.cooler is None:
+        log.error("you must define either a --warmer or a --cooler!")
+        ex = 1
+    if ex:
+        build_arg_parser().print_usage()
         sys.exit(1)
+
+
+def main(ns):
+    validate_ns_or_sysexit(ns)
     configure_logging(True)
     if ns.sendstats:
         if ns.sendstats == 'webui':

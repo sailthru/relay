@@ -46,7 +46,7 @@ def targettype(x):
 
 
 @lazy_kwargs
-def target(parser, default=os.environ.get('RELAY_TARGET', targettype(0))):
+def target(parser, default=os.environ.get('RELAY_TARGET')):
     parser.add_argument(
         '-t', '--target', default=default, type=targettype, help=(
             "A target value that the metric we're watching should stabilize"
