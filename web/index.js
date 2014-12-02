@@ -6,7 +6,8 @@ var io = require('socket.io')(server);
 // receive zmq messages
 var zmq = require('zmq');
 var subscriber = zmq.socket('sub');
-subscriber.connect('ipc:///tmp/relaylog');
+// subscriber.connect('ipc:///tmp/relaylog');
+subscriber.connect('tcp://0.0.0.0:5846');
 subscriber.subscribe('');
 
 // when a client connects via websockets,
