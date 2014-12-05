@@ -16,22 +16,23 @@ add_argument
 
 
 @lazy_kwargs
-def metric(parser, default=os.environ.get('RELAY_METRIC'),
-           type=lambda x: util.load_obj_from_path(x, prefix='relay.plugins')):
+def metric(
+    parser,
+    default=os.environ.get('RELAY_METRIC'),
+    type=lambda x: util.load_obj_from_path(x, prefix='relay.plugins'),
+    help=(
+        ' This should point to generator (function or class) that,'
+        ' when called, returns a metric value.  In a PID controller, this'
+        ' corresponds to the process variable (PV).  Warming the system'
+        ' should eventually increase metric values and cooling should'
+        ' decrease them. '
+        '  Valid examples:\n'
+        '  "bash_echo_metric"'
+        '  (this loads relay.plugins.bash_echo_metric),\n'
+        '  "relay.plugins.bash_echo_metric",\n'
+        '  "mycode.custom_metric"\n')):
     parser.add_argument(
-        '-m', '--metric', default=default, type=type,
-        help=(
-            ' This should point to generator (function or class) that,'
-            ' when called, returns a metric value.  In a PID controller, this'
-            ' corresponds to the process variable (PV).  Warming the system'
-            ' should eventually increase metric values and cooling should'
-            ' decrease them. '
-            '  Valid examples:\n'
-            '  "bash_echo_metric"'
-            '  (this loads relay.plugins.bash_echo_metric),\n'
-            '  "relay.plugins.bash_echo_metric",\n'
-            '  "mycode.custom_metric"\n'
-        ))
+        '-m', '--metric', default=default, type=type, help=help)
 
 
 def targettype(x):
@@ -46,46 +47,51 @@ def targettype(x):
 
 
 @lazy_kwargs
-def target(parser, default=os.environ.get('RELAY_TARGET'), type=targettype):
+def target(
+    parser,
+    default=os.environ.get('RELAY_TARGET'),
+    type=targettype,
+    help=(
+        "A target value that the metric we're watching should stabilize"
+        " at."
+        ' For instance, if relay is monitoring a queue size, the target'
+        ' value is 0.  In a PID controller, this value corresponds'
+        ' to the setpoint (SP).')):
     parser.add_argument(
-        '-t', '--target', default=default, type=type, help=(
-            "A target value that the metric we're watching should stabilize"
-            " at."
-            ' For instance, if relay is monitoring a queue size, the target'
-            ' value is 0.  In a PID controller, this value corresponds'
-            ' to the setpoint (SP).'
-        ))
+        '-t', '--target', default=default, type=type, help=help)
 
 
 @lazy_kwargs
-def warmer(parser, default=os.environ.get('RELAY_WARMER'),
-           type=lambda x: util.load_obj_from_path(x, prefix='relay.plugins')):
+def warmer(
+    parser,
+    default=os.environ.get('RELAY_WARMER'),
+    type=lambda x: util.load_obj_from_path(x, prefix='relay.plugins'),
+    help=(
+        ' This should point to a function that starts n additional tasks.'
+        ' In a PID controller, this is the manipulated variable (MV).'
+        '  Valid examples:\n'
+        '  "bash_echo_warmer",\n'
+        '  "relay.plugins.bash_echo_warmer",\n'
+        '  "mycode.my_warmer_func"\n')):
     parser.add_argument(
-        '-w', '--warmer', default=default, type=type,
-        help=(
-            ' This should point to a function that starts n additional tasks.'
-            ' In a PID controller, this is the manipulated variable (MV).'
-            '  Valid examples:\n'
-            '  "bash_echo_warmer",\n'
-            '  "relay.plugins.bash_echo_warmer",\n'
-            '  "mycode.my_warmer_func"\n'
-        ))
+        '-w', '--warmer', default=default, type=type, help=help)
 
 
 @lazy_kwargs
-def cooler(parser, default=os.environ.get('RELAY_COOLER'),
-           type=lambda x: util.load_obj_from_path(x, prefix='relay.plugins')):
+def cooler(
+    parser,
+    default=os.environ.get('RELAY_COOLER'),
+    type=lambda x: util.load_obj_from_path(x, prefix='relay.plugins'),
+    help=(
+        ' This should point to a function or class that terminates n'
+        " instances of your tasks."
+        '  In a PID controller, this is the manipulated variable (MV).'
+        " You may not want to implement"
+        " both a warmer and a cooler.  Does your thermostat toggle"
+        " the heating element and air conditioner at the same time?"
+        " For valid examples, see the --warmer syntax")):
     parser.add_argument(
-        '-c', '--cooler', default=default, type=type,
-        help=(
-            ' This should point to a function or class that terminates n'
-            " instances of your tasks."
-            '  In a PID controller, this is the manipulated variable (MV).'
-            " You may not want to implement"
-            " both a warmer and a cooler.  Does your thermostat toggle"
-            " the heating element and air conditioner at the same time?"
-            " For valid examples, see the --warmer syntax"
-        ))
+        '-c', '--cooler', default=default, type=type, help=help)
 
 
 @lazy_kwargs
