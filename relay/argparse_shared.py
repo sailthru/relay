@@ -16,10 +16,10 @@ add_argument
 
 
 @lazy_kwargs
-def metric(parser, default=os.environ.get('RELAY_METRIC')):
+def metric(parser, default=os.environ.get('RELAY_METRIC'),
+           type=lambda x: util.load_obj_from_path(x, prefix='relay.plugins')):
     parser.add_argument(
-        '-m', '--metric', default=default,
-        type=lambda x: util.load_obj_from_path(x, prefix='relay.plugins'),
+        '-m', '--metric', default=default, type=type,
         help=(
             ' This should point to generator (function or class) that,'
             ' when called, returns a metric value.  In a PID controller, this'
@@ -46,9 +46,9 @@ def targettype(x):
 
 
 @lazy_kwargs
-def target(parser, default=os.environ.get('RELAY_TARGET')):
+def target(parser, default=os.environ.get('RELAY_TARGET'), type=targettype):
     parser.add_argument(
-        '-t', '--target', default=default, type=targettype, help=(
+        '-t', '--target', default=default, type=type, help=(
             "A target value that the metric we're watching should stabilize"
             " at."
             ' For instance, if relay is monitoring a queue size, the target'
@@ -58,10 +58,10 @@ def target(parser, default=os.environ.get('RELAY_TARGET')):
 
 
 @lazy_kwargs
-def warmer(parser, default=os.environ.get('RELAY_WARMER')):
+def warmer(parser, default=os.environ.get('RELAY_WARMER'),
+           type=lambda x: util.load_obj_from_path(x, prefix='relay.plugins')):
     parser.add_argument(
-        '-w', '--warmer', default=default,
-        type=lambda x: util.load_obj_from_path(x, prefix='relay.plugins'),
+        '-w', '--warmer', default=default, type=type,
         help=(
             ' This should point to a function that starts n additional tasks.'
             ' In a PID controller, this is the manipulated variable (MV).'
@@ -73,10 +73,10 @@ def warmer(parser, default=os.environ.get('RELAY_WARMER')):
 
 
 @lazy_kwargs
-def cooler(parser, default=os.environ.get('RELAY_COOLER')):
+def cooler(parser, default=os.environ.get('RELAY_COOLER'),
+           type=lambda x: util.load_obj_from_path(x, prefix='relay.plugins')):
     parser.add_argument(
-        '-c', '--cooler', default=default,
-        type=lambda x: util.load_obj_from_path(x, prefix='relay.plugins'),
+        '-c', '--cooler', default=default, type=type,
         help=(
             ' This should point to a function or class that terminates n'
             " instances of your tasks."
