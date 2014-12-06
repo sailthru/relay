@@ -1,4 +1,4 @@
 - consider Gain Scheduling (different weights in different regions)
-- better bounds for the weight term
-- test with square waves
-- decide how to implement various plugins
+
+- better web UI
+- support a bash plugin
