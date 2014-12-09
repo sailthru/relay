@@ -2,6 +2,7 @@ var express = require('express');
 var app = express();
 var server = require('http').Server(app);
 var io = require('socket.io')(server);
+var path = require('path');
 
 // receive zmq messages
 var zmq = require('zmq');
@@ -36,7 +37,7 @@ io.on('connection', function (socket) {
 
 // configure webserver
 server.listen(8080);
-app.use('/vendor', express.static(__dirname + '/vendor'));
+app.use('/vendor', express.static(path.join(__dirname, '..', '/vendor')));
 app.get('/', function (req, res) {
     res.sendFile(__dirname + '/index.html');
 });

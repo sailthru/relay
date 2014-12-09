@@ -15,7 +15,7 @@ from relay import argparse_shared as at
 
 
 def start_webui():
-    cwd = join(dirname(dirname(abspath(__file__))), 'web')
+    cwd = join(dirname(dirname(abspath(__file__))), 'web/src')
     log.info("Starting node.js webui in a subshell")
     subprocess.Popen(
         'cd %s ; node index.js' % cwd, shell=True,
