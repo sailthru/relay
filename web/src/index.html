@@ -65,7 +65,7 @@
       chart.render();
     };
 
-    var socket = io('http://localhost:8080');
+    var socket = io("<%= webserver_url %>");
     socket.on('pvdata', function(obj) {x++; update(obj, 'pvdata', true);});
     socket.on('mvdata', function(obj) {update(obj, 'mvdata', false);});
     socket.on('spdata', function(obj) {update(obj, 'spdata', false);});

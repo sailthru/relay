@@ -3,6 +3,7 @@ var app = express();
 var server = require('http').Server(app);
 var io = require('socket.io')(server);
 var path = require('path');
+var util = require('util');
 
 // receive zmq messages
 var zmq = require('zmq');
@@ -36,9 +37,13 @@ io.on('connection', function (socket) {
 });
 
 // configure webserver
-server.listen(8080);
+app.engine('.html', require('ejs').__express);
+var port = 8080;
+server.listen(port);
 app.use('/vendor', express.static(path.join(__dirname, '..', '/vendor')));
 app.get('/', function (req, res) {
-    res.sendFile(__dirname + '/index.html');
+  res.render(
+    path.join(__dirname, 'index.html'),
+    {webserver_url: util.format('http://%s:%s', req.hostname, port)});
 });
 
