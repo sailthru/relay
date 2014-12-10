@@ -1,6 +1,19 @@
 Relay: A thermostat for distributed systems
 ============
 
+Quickstart with a demo!
+------------
+
+```
+./bin/demo.sh  # You must have Docker installed
+```
+
+Navigate your browser to:
+
+```
+http://<dockerip>:8080  # <dockerip> is probably $DOCKER_HOST or "localhost"
+```
+
 What problem does it solve?
 ------------
 
