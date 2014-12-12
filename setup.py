@@ -8,7 +8,7 @@ except ImportError:
 
 setup(
     name='relay.runner',
-    version='0.1.7',
+    version='0.1.8.dev0',
     description=(
         'A smart thermostat.  Given a metric, or some timeseries that should'
         ' approach a given target, add heat or coolant as necessary'
