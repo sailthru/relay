@@ -5,12 +5,16 @@
 # on mac, it's probably your boot2docker vm's IP address, $DOCKER_HOST
 
 
+dir="$( cd "$( dirname "$( dirname "$0" )" )" && pwd )"
+
 echo start the Relay.web UI
 docker run -itd \
   --name relay.web -p 8080:8080 -p 5673:5673 \
   adgaudio/relay.web
 
-trap "echo removing relay.web docker container && docker rm -f relay.web" \
+(cd $dir && docker build -t adgaudio/relay.runner .)
+
+trap "echo removing relay.web docker container && (docker rm -f relay.web) &" \
   EXIT SIGINT SIGTERM
 
 echo start Relay.runner

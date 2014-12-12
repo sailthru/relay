@@ -41,7 +41,7 @@ def calc_weight(errdata):
     # find the amplitude integral of neighboring samples.
     # search <360 degrees to left of most recent sample's phase
     # p_k = phase - degrees_between_samples * k  # kth phase
-    amplitude_integrals = np.sin(phase)  # iteratively updated
+    amplitude_integrals = np.abs(np.sin(phase))  # iteratively updated
     # samples per cycle
     kth = len(errdata) / np.arange(1, len(errdata) // 2)
     num_degrees_between_samples = 2 * np.pi / kth
@@ -59,8 +59,8 @@ def calc_weight(errdata):
 
     # get the amplitude of each frequency in the fft spectrum
     amplitude = np.abs(sp)
-
     return (
+        # np.sin(phase)
         (np.sin(phase) / amplitude_integrals)
         * (amplitude / amplitude.sum())
     ).sum()
@@ -84,8 +84,8 @@ def create_ramp_plan(err, ramp):
     # np.arange(n).sum() == err
     # --> solve for n
     # err = (n - 1) * (n // 2) == .5 * n**2 - .5 * n
-    # 0 = n**2 - n - 2*err  --> solve for n
-    n = np.abs(np.roots([.5, -.5, -err]).max())
+    # 0 = n**2 - n  --> solve for n
+    n = np.abs(np.roots([.5, -.5, 0]).max())
     niter = int(ramp // (2 * n))  # 2 means add all MV in first half of ramp
     MV = n
     log.info('Initializing a ramp plan', extra=dict(
@@ -145,7 +145,7 @@ def main(ns):
         else:
             errdata = errhist.send(err)
             weight = calc_weight(errdata)
-            MV = int(err + -1 * weight * sum(errdata) / len(errdata))
+            MV = int(round(err - weight * sum(errdata) / len(errdata)))
             log.info('data', extra=dict(data=[
                 err, weight,
                 sum(errdata) / len(errdata)]))
