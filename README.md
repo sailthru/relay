@@ -145,7 +145,11 @@ Quick Start!
 
 Install relay
 
-    pip install relay
+    pip install relay.runner
+
+      OR for this demo:
+
+    pip install "relay.runner[webui]"  # webui needs ZeroMQ installed
 
 Look at the usage
 
