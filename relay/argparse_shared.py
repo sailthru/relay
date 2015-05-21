@@ -4,21 +4,20 @@ may choose to safely override or inherit the default options
 
 This module defines all inputs that Relay supports
 """
-from argparse_tools import lazy_kwargs, build_arg_parser, group, add_argument
-import os
+from argparse_tools import (
+    lazy_kwargs, build_arg_parser, group, add_argument_default_from_env_factory)
 
 from relay import util
 
 # expose argparse_tools code
 build_arg_parser
 group
-add_argument
+add_argument = add_argument_default_from_env_factory(env_prefix='RELAY_')
 
 
 @lazy_kwargs
 def metric(
     parser,
-    default=os.environ.get('RELAY_METRIC'),
     type=lambda x: util.load_obj_from_path(x, prefix='relay.plugins'),
     help=(
         ' This should point to generator (function or class) that,'
@@ -31,8 +30,7 @@ def metric(
         '  (this loads relay.plugins.bash_echo_metric),\n'
         '  "relay.plugins.bash_echo_metric",\n'
         '  "mycode.custom_metric"\n')):
-    parser.add_argument(
-        '-m', '--metric', default=default, type=type, help=help)
+    add_argument('-m', '--metric', type=type, help=help)(parser)
 
 
 def targettype(x):
@@ -49,7 +47,6 @@ def targettype(x):
 @lazy_kwargs
 def target(
     parser,
-    default=os.environ.get('RELAY_TARGET'),
     type=targettype,
     help=(
         "A target value that the metric we're watching should stabilize"
@@ -57,14 +54,12 @@ def target(
         ' For instance, if relay is monitoring a queue size, the target'
         ' value is 0.  In a PID controller, this value corresponds'
         ' to the setpoint (SP).')):
-    parser.add_argument(
-        '-t', '--target', default=default, type=type, help=help)
+    add_argument('-t', '--target', type=type, help=help)(parser)
 
 
 @lazy_kwargs
 def warmer(
     parser,
-    default=os.environ.get('RELAY_WARMER'),
     type=lambda x: util.load_obj_from_path(x, prefix='relay.plugins'),
     help=(
         ' This should point to a function that starts n additional tasks.'
@@ -73,14 +68,12 @@ def warmer(
         '  "bash_echo_warmer",\n'
         '  "relay.plugins.bash_echo_warmer",\n'
         '  "mycode.my_warmer_func"\n')):
-    parser.add_argument(
-        '-w', '--warmer', default=default, type=type, help=help)
+    add_argument('-w', '--warmer', type=type, help=help)(parser)
 
 
 @lazy_kwargs
 def cooler(
     parser,
-    default=os.environ.get('RELAY_COOLER'),
     type=lambda x: util.load_obj_from_path(x, prefix='relay.plugins'),
     help=(
         ' This should point to a function or class that terminates n'
@@ -90,21 +83,21 @@ def cooler(
         " both a warmer and a cooler.  Does your thermostat toggle"
         " the heating element and air conditioner at the same time?"
         " For valid examples, see the --warmer syntax")):
-    parser.add_argument(
-        '-c', '--cooler', default=default, type=type, help=help)
+    add_argument('-c', '--cooler', type=type, help=help)(parser)
 
 
 @lazy_kwargs
-def delay(parser, default=os.environ.get('RELAY_DELAY', 1)):
-    parser.add_argument(
+def delay(parser, default=1):
+    add_argument(
         '-d', '--delay', type=float, default=default,
-        help='num seconds to wait between metric polling. ie. 1/sample_rate')
+        help='num seconds to wait between metric polling. ie. 1/sample_rate'
+    )(parser)
 
 
 @lazy_kwargs
-def sendstats(parser, default=os.environ.get('RELAY_SENDSTATS')):
-    parser.add_argument(
-        '--sendstats', default=default, help=(
+def sendstats(parser):
+    add_argument(
+        '--sendstats', help=(
             'You can visualize how well relay is'
             ' tuned to your particular metric with the stats generated.'
             ' If "--sendstats webui" passed, spin up a node.js webserver in a'
@@ -112,20 +105,22 @@ def sendstats(parser, default=os.environ.get('RELAY_SENDSTATS')):
             ' If any other argument is'
             ' passed, it must be a zmq uri that will'
             ' receive arbitrary json-encoded log messages from relay.'
-        ))
+        ))(parser)
 
 
 @lazy_kwargs
-def lookback(parser, default=os.environ.get('RELAY_LOOKBACK', 1000)):
-    parser.add_argument(
+def lookback(parser, default=1000):
+    add_argument(
         '--lookback', default=default, type=int,
         help=(
-            'Keep a history of the last n PV samples for online tuning')),
+            'Keep a history of the last n PV samples for online tuning')
+    )(parser)
 
 
 @lazy_kwargs
-def ramp(parser, default=os.environ.get('RELAY_RAMP', 1)):
-    parser.add_argument(
+def ramp(parser, default=1):
+    add_argument(
         '--ramp', type=int, default=default, help=(
             'Add heat or cooling over the first n samples.  This is useful'
-            ' if you do not want to add a lot of heat all at once')),
+            ' if you do not want to add a lot of heat all at once')
+    )(parser)

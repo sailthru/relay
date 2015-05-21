@@ -26,7 +26,7 @@ setup(
 
     packages=find_packages(),
     include_package_data=True,
-    install_requires=['argparse_tools>=1.0.5', 'colorlog', 'numpy'],
+    install_requires=['argparse_tools>=1.0.6', 'colorlog', 'numpy'],
 
     extras_require={
         'webui': ['pyzmq'],
