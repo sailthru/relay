@@ -2,8 +2,8 @@ Differences between different versions of Relay
 ===========================================
 
 
-1.9 (2015-09-14)
-----------------
+0.1.9 (2015-09-14)
+------------------
 
 ####New Features
 - adds support for stop_condition as an optional user-defined function
