@@ -7,6 +7,7 @@ Differences between different versions of Relay
 
 ####New Features
 - adds support for stop_condition as an optional user-defined function
+- introduces docker-compose for the demo instead of managing manually
 
 <=1.8
 ----------------

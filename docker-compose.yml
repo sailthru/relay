@@ -1,0 +1,18 @@
+web:
+  image: adgaudio/relay.web
+  ports:
+    - "8080:8080"
+    - "5673:5673"
+
+relay:
+  build: .
+  links:
+    - web
+  environment:
+    RELAY_WARMER: "bash_echo_warmer"
+    RELAY_METRIC: "bash_echo_metric"
+    RELAY_TARGET: "oscillating_setpoint"
+    RELAY_DELAY: 0.1
+    RELAY_RAMP: 10
+    RELAY_SENDSTATS: "tcp://web:5673"
+    # RELAY_STOP_CONDITION: "stop_if_mostly_diverging"
