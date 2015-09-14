@@ -52,6 +52,17 @@ def target():
         yield 0
 
 
+def stop_condition(errdata):
+    """A stop condition is an optional function that
+    determines whether Relay should exit.
+
+    The input is an array of the error history between the target and metric.
+    The output is -1 or an integer return code that gets passed to sys.exit(...)
+      You should return -1 as long as you want Relay to continue operating
+    """
+    return -1
+
+
 ######
 # Example
 #####
@@ -139,3 +150,23 @@ def bash_echo_cooler(n):
         ' ; kill `pgrep -f "from bash: started relay launcher task"'
         ' | tail -n %s` 2>/dev/null' % n)
     subprocess.Popen(cmd, shell=True, executable='bash').wait()
+
+
+def stop_if_mostly_diverging(errdata):
+    """This is an example stop condition that asks Relay to quit if
+    the error difference between consecutive samples is increasing more than
+    half of the time.
+
+    It's quite sensitive and designed for the demo, so you probably shouldn't
+    use this is a production setting
+    """
+    n_increases = sum([
+        abs(y) - abs(x) > 0 for x, y in zip(errdata, errdata[1:])])
+    if len(errdata) * 0.5 < n_increases:
+        # most of the time, the next sample is worse than the previous sample
+        # relay is not healthy
+        return 0
+    else:
+        # most of the time, the next sample is better than the previous sample
+        # realy is in a healthy state
+        return -1

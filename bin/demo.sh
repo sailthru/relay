@@ -29,4 +29,6 @@ docker run -it --rm \
   -e RELAY_SENDSTATS='tcp://web:5673' \
   adgaudio/relay.runner
 
+  # -e RELAY_STOP_CONDITION=stop_if_mostly_diverging \
+
 

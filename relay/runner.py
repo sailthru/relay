@@ -114,6 +114,20 @@ def validate_ns_or_sysexit(ns):
         sys.exit(1)
 
 
+def evaluate_stop_condition(errdata, stop_condition):
+    """
+    Call the user-defined function: stop_condition(errdata)
+    If the function returns -1, do nothing.  Otherwise, sys.exit.
+    """
+    if stop_condition:
+        return_code = stop_condition(list(errdata))
+        if return_code != -1:
+            log.info(
+                'Stop condition triggered!  Relay is terminating.',
+                extra=dict(return_code=return_code))
+            sys.exit(return_code)
+
+
 def main(ns):
     validate_ns_or_sysexit(ns)
     configure_logging(True)
@@ -166,6 +180,7 @@ def main(ns):
             log.debug(
                 'stabilized PV at setpoint', extra=dict(MV=MV, PV=PV, SP=SP))
         time.sleep(ns.delay)
+        evaluate_stop_condition(list(errdata), ns.stop_condition)
 
 
 build_arg_parser = at.build_arg_parser([
@@ -177,5 +192,5 @@ build_arg_parser = at.build_arg_parser([
         at.warmer, at.cooler),
     at.group(
         "Some optional Relay parameters",
-        at.delay, at.lookback, at.ramp, at.sendstats),
+        at.delay, at.lookback, at.ramp, at.sendstats, at.stop_condition),
 ])

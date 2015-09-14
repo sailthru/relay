@@ -1,0 +1,16 @@
+Differences between different versions of Relay
+===========================================
+
+
+1.9 (2015-09-14)
+----------------
+
+####New Features
+- adds support for stop_condition as an optional user-defined function
+
+<=1.8
+----------------
+
+- beginning of changelog.
+- warmer, cooler, metric and target functions
+- several optional parameters, includeing ramp up, delay, lookpack, sendstats

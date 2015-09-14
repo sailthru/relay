@@ -124,3 +124,19 @@ def ramp(parser, default=1):
             'Add heat or cooling over the first n samples.  This is useful'
             ' if you do not want to add a lot of heat all at once')
     )(parser)
+
+
+@lazy_kwargs
+def stop_condition(parser):
+    add_argument(
+        '--stop_condition',
+        type=lambda x: util.load_obj_from_path(x, prefix='relay.plugins'),
+        help=(
+            'Optional.  This should point to a function that examines the'
+            ' error history and determines whether Relay should exit. The'
+            ' return code returned by this function gets passed to'
+            ' sys.exit(...)'
+            '  Valid examples:\n'
+            '  "stop_if_mostly_diverging",\n'
+            '  "mycode.my_stop_condition"\n')
+    )(parser)
